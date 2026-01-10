@@ -4,7 +4,7 @@ ekf_filter_node:
         # -------------------------------
         # 通用滤波器配置
         # -------------------------------
-        frequency: 15.0  # 决定EKF每秒输出几次位置估计，这里表示1s输出15次。注意：需要考虑输入数据的频率(/odom,/imu_data_raw)
+        frequency: 10.0  # 决定EKF每秒输出几次位置估计，这里表示1s输出15次。注意：需要考虑输入数据的频率(/odom,/imu_data_raw)
         sensor_timeout: 0.1  # 如果某个传感器超过这个时间没发消息，EKF 就不再用它的数据，只预测，不校正。可防止某个坏传感器卡住滤波器。
 
         two_d_mode: true  
@@ -39,7 +39,7 @@ ekf_filter_node:
 
         # 里程计数据融合配置：从 /odom 中要融合哪些变量
         odom0_config: [false, false, false,
-                       false, false, true,
+                       false, false, false,
                        true,  true,  false,
                        false, false, true,
                        false, false, false]
@@ -55,7 +55,7 @@ ekf_filter_node:
                   #因为 two_d_mode=true，z_vel 被强制为 0，无需加入。
         odom0_queue_size: 5        # 滤波器接收odom数据的缓存队列长度
         odom0_nodelay: false       # 网络传输延迟控制（是否启用 tcpNoDelay，关闭TCP的Nagle算法）
-        odom0_differential: true  # True表示将绝对位置/姿态转换为速度(差分融合)
+        odom0_differential: false  # True表示将绝对位置/姿态转换为速度(差分融合)
 
         odom0_relative: false  # 是否让所有Odom测量值相对第一次测量时刻
         # -------------------------------
