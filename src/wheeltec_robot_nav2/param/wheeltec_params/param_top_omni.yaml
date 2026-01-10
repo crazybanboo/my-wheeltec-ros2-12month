@@ -14,7 +14,7 @@ amcl:
     do_beamskip: false              #是否在似然场模型中进行波束跳跃
     global_frame_id: "map"          #定位系统发布的坐标框架的名称
     lambda_short: 0.1               #模型 z_short 部分的指数衰减参数
-    laser_likelihood_max_dist: 2.0  #在地图上进行障碍物膨胀的最大距离，用于似然场模型
+    laser_likelihood_max_dist: 4.0  #在地图上进行障碍物膨胀的最大距离，用于似然场模型
     laser_max_range: 100.0          #要考虑的最大扫描范围，-1.0 将导致使用激光报告的最大范围
     laser_min_range: -1.0           #要考虑的最小扫描范围，-1.0 将导致使用激光报告的最小范围
     laser_model_type: "likelihood_field" #使用哪种模型，
@@ -32,11 +32,11 @@ amcl:
     #选项为“nav2_amcl::DifferentialMotionModel”和“nav2_amcl::OmniMotionModel”。
 
     save_pose_rate: 0.5             #将最后估计的姿势和协方差存储到参数服务器的最大速率（Hz）
-    sigma_hit: 0.2                 #模型的 z_hit 部分中使用的高斯模型的标准差
+    sigma_hit: 0.2                 #模型的 z_hit 部分中使用的高斯模型的 standard deviation
     tf_broadcast: true              #将其设置为 false 以防止 amcl 发布全局框架和里程计框架之间的变换
     transform_tolerance: 1.0        #发布转换的容差
-    update_min_a: 0.2              #执行过滤器更新之前需要进行旋转运动。
-    update_min_d: 0.25             #执行过滤器更新之前需要进行平移运动
+    update_min_a: 0.1              #执行过滤器更新之前需要进行旋转运动。
+    update_min_d: 0.1             #执行过滤器更新之前需要进行平移运动
     z_hit: 0.7                      #模型的 z_hit 部分的混合权重，所有使用的 z 权重之和必须为 1。
     z_max: 0.001                    #模型的 z_max 部分的混合权重，所有使用的 z 权重之和必须为 1。
     z_rand: 0.059                   #模型的 z_rand 部分的混合权重，所有使用的 z 权重之和必须为 1。
@@ -238,7 +238,7 @@ local_costmap:
       inflation_layer:                             #膨胀层参数
         plugin: "nav2_costmap_2d::InflationLayer"  #膨胀层插件。
         cost_scaling_factor: 3.0                   #成本缩放因子，决定障碍物成本随距离的递减速度。
-        inflation_radius: 0.25                     #膨胀半径
+        inflation_radius: 0.35                     #膨胀半径 (由0.25改为0.35让机器人离墙远点)
       voxel_layer:
         plugin: "nav2_costmap_2d::VoxelLayer"      #体素层插件。
         enabled: True
@@ -301,7 +301,7 @@ global_costmap:
       inflation_layer: #膨胀层参数
         plugin: "nav2_costmap_2d::InflationLayer"  #膨胀层插件
         cost_scaling_factor: 10.0                   #成本缩放因子，决定障碍物成本随距离的递减速度。
-        inflation_radius: 0.2                     #膨胀半径
+        inflation_radius: 0.35                     #膨胀半径
       always_send_full_costmap: True               #是否每次更新时都发送完整的成本图，而不是更新
   global_costmap_client:
     ros__parameters:
@@ -330,7 +330,7 @@ planner_server: #规划器服务器参数
     use_sim_time: False
     planner_plugins: ["GridBased"] #规划器插件类型，需要与BT Tree文件匹配
     GridBased:
-      plugin: "nav2_smac_planner/SmacPlannerHybrid"
+      plugin: "nav2_smac_planner/SmacPlanner2D"
       tolerance: 0.25                     # tolerance for planning if unable to reach exact pose, in meters, for 2D node
       downsample_costmap: false           # whether or not to downsample the map
       downsampling_factor: 1              # multiplier for the resolution of the costmap layer (e.g. 2 on a 5cm costmap would be 10cm)
@@ -338,7 +338,7 @@ planner_server: #规划器服务器参数
       max_iterations: 1000000             # maximum total iterations to search for before failing (in case unreachable), set to -1 to disable
       max_on_approach_iterations: 1000    # maximum number of iterations to attempt to reach goal once in tolerance, 2D only
       max_planning_time: 5.0              # max time in s for planner to plan, smooth, and upsample. Will scale maximum smoothing and upsampling times based on remaining time after planning.
-      motion_model_for_search: "DUBIN"   # 2D Moore, Von Neumann; Hybrid Dubin, Redds-Shepp; State Lattice set internally
+      motion_model_for_search: "MOORE"   # 2D Moore, Von Neumann; Hybrid Dubin, Redds-Shepp; State Lattice set internally
       cost_travel_multiplier: 2.0         # For 2D: Cost multiplier to apply to search to steer away from high cost areas. Larger values will place in the center of aisles more exactly (if non-`FREE` cost potential field exists) but take slightly longer to compute. To optimize for speed, a value of 1.0 is reasonable. A reasonable tradeoff value is 2.0. A value of 0.0 effective disables steering away from obstacles and acts like a naive binary search A*.
       angle_quantization_bins: 72         # For Hybrid/Lattice nodes: Number of angle bins for search, must be 1 for 2D node (no angle search)
       analytic_expansion_ratio: 3.5       # For Hybrid/Lattice nodes: The ratio to attempt analytic expansions during search for final approach.

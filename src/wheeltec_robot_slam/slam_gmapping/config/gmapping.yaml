@@ -5,9 +5,9 @@ slam_gmapping:
     map_frame: "map"
     odom_frame: "odom_combined"
     transform_publish_period: 0.05
-    map_update_interval: 2.0  # 增加地图更新间隔 (默认0.5)
+    map_update_interval: 0.5  # 增加地图更新间隔 (默认0.5)
     maxUrange: 80.0           # 根据激光雷达实际有效距离调整 (默认80.0)
-    particles: 15             # 降低粒子数以减轻CPU负担 (默认30)
+    particles: 30             # 降低粒子数以减轻CPU负担 (默认30)
     linearUpdate: 1.0
     angularUpdate: 0.5
     temporalUpdate: 1.0
