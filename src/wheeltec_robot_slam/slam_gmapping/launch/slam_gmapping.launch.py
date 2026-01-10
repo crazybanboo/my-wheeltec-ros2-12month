@@ -14,6 +14,9 @@ def generate_launch_description():
     bringup_dir = get_package_share_directory('turn_on_wheeltec_robot')
     launch_dir = os.path.join(bringup_dir, 'launch')
 
+    gmapping_dir = get_package_share_directory('slam_gmapping')
+    gmapping_config = os.path.join(gmapping_dir, 'config', 'gmapping.yaml')
+
     wheeltec_lidar = IncludeLaunchDescription(
             PythonLaunchDescriptionSource(os.path.join(launch_dir, 'wheeltec_lidar.launch.py')),
     )
@@ -24,5 +27,8 @@ def generate_launch_description():
         wheeltec_robot,wheeltec_lidar,
         SetEnvironmentVariable('RCUTILS_LOGGING_BUFFERED_STREAM', '1'),
         launch_ros.actions.Node(
-            package='slam_gmapping', executable='slam_gmapping', output='screen', parameters=[{'use_sim_time':use_sim_time}]),
+            package='slam_gmapping', 
+            executable='slam_gmapping', 
+            output='screen', 
+            parameters=[gmapping_config, {'use_sim_time':use_sim_time}]),
     ])
