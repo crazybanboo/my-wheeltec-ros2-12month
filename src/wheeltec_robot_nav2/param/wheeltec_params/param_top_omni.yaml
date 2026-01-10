@@ -62,7 +62,7 @@ amcl_rclcpp_node:
 bt_navigator:
   ros__parameters:
     use_sim_time: False
-    transform_tolerance: 0.1 #变换容差
+    transform_tolerance: 0.5 #变换容差
     goal_reached_tol: 0.25 #接受姿势作为目标的容忍度(m)
     global_frame: map
     robot_base_frame: base_footprint
@@ -87,7 +87,7 @@ bt_navigator_rclcpp_node:
 controller_server:
   ros__parameters:
     use_sim_time: False
-    controller_frequency: 10.0           #运行控制器的频率
+    controller_frequency: 5.0           #运行控制器的频率
     # min_x_velocity_threshold: 0.001      #最小 x 速度阈值
     # min_y_velocity_threshold: 0.5        #最小 y 速度阈值
     # min_theta_velocity_threshold: 0.001  #最小速度阈值
@@ -100,7 +100,7 @@ controller_server:
     # Progress checker parameters
     progress_checker: #进度检查器
       plugin: "nav2_controller::SimpleProgressChecker"
-      required_movement_radius: 0.5 #所需运动半径
+      required_movement_radius: 0.1 #所需运动半径,从 0.5 降低到 0.1。这样当机器人在狭窄空间缓慢挪动时，不会轻易判定为“无法前进”而中止任务。
       movement_time_allowance: 10.0 #移动时间容差
     # Goal checker parameters
     #precise_goal_checker:
@@ -124,15 +124,15 @@ controller_server:
       simulate_ahead_time: 1.0
       rotate_to_goal_heading: True
     
-      time_steps: 56    #候选轨迹中的时间步长（点）数
-      model_dt: 0.1    #每个时间步长的时间步长的长度dt（以秒为单位）是预测范围
-      batch_size: 2000  #在给定迭代中从当前最佳控制序列中随机采样的候选轨迹的数量
+      time_steps: 30    #候选轨迹中的时间步长（点）数
+      model_dt: 0.2    #每个时间步长的时间步长的长度dt（以秒为单位）是预测范围
+      batch_size: 400  #在给定迭代中从当前最佳控制序列中随机采样的候选轨迹的数量
       vx_std: 0.2       #Vx 的抽样标准差
       vy_std: 0.2       #Vy 的抽样标准差
       wz_std: 0.4       #Wz（角速度）的抽样标准差
-      vx_max: 0.25       #目标最大前进速度（米/秒）
-      vx_min: -0.25      #目标最大反向速度（米/秒）
-      vy_max: 0.25       #如果使用Omni运动模型，目标最大横向速度（m/s）
+      vx_max: 0.5       #目标最大前进速度（米/秒）
+      vx_min: -0.5      #目标最大反向速度（米/秒）
+      vy_max: 0.5       #如果使用Omni运动模型，目标最大横向速度（m/s）
       wz_max: 2.0       #最大旋转速度（弧度/秒）
       ax_max: 1.5
       ax_min: -1.5
@@ -141,7 +141,7 @@ controller_server:
       iteration_count: 1 #迭代次数
       prune_distance: 1.5 #路径上距离机器人最近点的距离（米）
       enforce_path_inversion: false
-      transform_tolerance: 0.1 #使用 TF（s）进行数据转换的时间容差
+      transform_tolerance: 0.5 #使用 TF（s）进行数据转换的时间容差
       temperature: 0.3 #根据成本选择轨迹，0表示使用成本最佳的控制，巨大的值将导致仅取所有轨迹的平均值而不考虑成本。
       gamma: 0.015 #平滑度（高）和低能耗（低）之间的权衡,保持默认值
       motion_model: "Omni" #用于轨迹规划的所需运动模型。选项包括DiffDrive、Omni或Ackermann。
@@ -176,10 +176,10 @@ controller_server:
         critical_weight: 30.0 #应用于临界碰撞的权重，用于collision_margin_distance防止近距离碰撞
         consider_footprint: false #是否使用点成本（如果机器人是圆形的或者计算能力低）或计算 SE2 足迹成本
         collision_cost: 10000.0 #应用于轨迹中真实碰撞的成本。
-        collision_margin_distance: 0.1 #碰撞边缘距离，应该设置在0.05-0.2之间，请确保将此参数设置为预计机器人需要穿越的最窄空间
+        collision_margin_distance: 0.15 #碰撞边缘距离，应该设置在0.05-0.2之间，请确保将此参数设置为预计机器人需要穿越的最窄空间
         near_goal_distance: 0.4 #靠近目标的距离（米）停止应用优先障碍物项，以允许机器人平稳地收敛到靠近障碍物的目标姿势，0.5 --> 0.6 -->0.3(Tues) 
         cost_scaling_factor: 5.0
-        inflation_radius: 0.2  #膨胀半径，仅限Humble
+        inflation_radius: 0.15  #膨胀半径，仅限Humble
 
       PreferForwardCritic: #激励机器人前进，而不是后退
         enabled: true
@@ -191,7 +191,7 @@ controller_server:
       PathAlignCritic:  #PathAlignCritic会激励机器人与全局路径保持一致。它不实现路径跟随行为。
         enabled: true
         cost_power: 1
-        cost_weight: 25.0 #权重参数
+        cost_weight: 15.0 #权重参数
         max_path_occupancy_ratio: 0.07 #最大路径占用率
         trajectory_point_step: 4
         threshold_to_consider: 0.5 #机器人与目标之间的距离阈值，阈值符合则停止考虑路径对齐并允许目标批评家接管。
@@ -210,7 +210,7 @@ controller_server:
       PathFollowCritic: #路径跟随评论家激励机器人沿着路径前进。
         enabled: true
         cost_power: 1
-        cost_weight: 25.0 #权重参数
+        cost_weight: 15.0 #权重参数
         offset_from_furthest: 5
         threshold_to_consider: 1.4 #机器人与目标之间的距离阈值，停止考虑路径跟随，并允许目标评论家接管。
 #参数参考：https://docs.nav2.org/configuration/packages/configuring-mppic.html
@@ -237,8 +237,8 @@ local_costmap:
       plugins: ["voxel_layer","inflation_layer"] #插件包括:{“体素层”，“膨胀层”}
       inflation_layer:                             #膨胀层参数
         plugin: "nav2_costmap_2d::InflationLayer"  #膨胀层插件。
-        cost_scaling_factor: 3.0                   #成本缩放因子，决定障碍物成本随距离的递减速度。建议从 3.0 改为 5.0，使障碍物成本随距离衰减更快，允许机器人靠墙更近，如果窄路过不去，可以尝试调大到 7.0 或 10.0
-        inflation_radius: 0.2                     #膨胀半径 (由0.25改为0.35让机器人离墙远点)
+        cost_scaling_factor: 5.0                   #成本缩放因子，决定障碍物成本随距离的递减速度。建议从 3.0 改为 5.0，使障碍物成本随距离衰减更快，允许机器人靠墙更近，如果窄路过不去，可以尝试调大到 7.0 或 10.0
+        inflation_radius: 0.25                     #膨胀半径 (由0.25改为0.35让机器人离墙远点)
       voxel_layer:
         plugin: "nav2_costmap_2d::VoxelLayer"      #体素层插件。
         enabled: True
@@ -300,8 +300,8 @@ global_costmap:
         map_subscribe_transient_local: True
       inflation_layer: #膨胀层参数
         plugin: "nav2_costmap_2d::InflationLayer"  #膨胀层插件
-        cost_scaling_factor: 1.0                   #成本缩放因子，决定障碍物成本随距离的递减速度。 现象：如果你发现生成的全局路径（那条红色的细线）总是切角切得太厉害（离墙角太近），或者在宽阔的走廊里不走中间，而是歪歪斜斜的。调整：如果你想让机器人规划出的路径离墙远一点，请调小这个值（比如从 10.0 降到 5.0）。
-        inflation_radius: 0.2                     #膨胀半径 （建议调大，让全局路径规划在中间）
+        cost_scaling_factor: 2.0                   #成本缩放因子，决定障碍物成本随距离的递减速度。 现象：如果你发现生成的全局路径（那条红色的细线）总是切角切得太厉害（离墙角太近），或者在宽阔 of 走廊里不走中间，而是歪歪斜斜的。调整：如果你想让机器人规划出的路径离墙远一点，请调小这个值（比如从 10.0 降到 5.0）。
+        inflation_radius: 0.15                     #膨胀半径 （建议调大，让全局路径规划在中间）
       always_send_full_costmap: True               #是否每次更新时都发送完整的成本图，而不是更新
   global_costmap_client:
     ros__parameters:
@@ -371,28 +371,28 @@ smoother_server:
       max_its: 1000
       do_refinement: True
 
-# behavior_server:
-#   ros__parameters:
-#     costmap_topic: local_costmap/costmap_raw           #用于在局部代价地图上进行碰撞检查的原始代价地图主题。
-#     footprint_topic: local_costmap/published_footprint #局部代价地图框架中的足迹主题。
-#     cycle_frequency: 10.0 #运行行为插件的频率。
-#     behavior_plugins: ["spin", "backup", "drive_on_heading", "wait"] #插件包括：{“旋转”、“后退”、“前进”、“等待”}
-#     spin:
-#       plugin: "nav2_behaviors/Spin"
-#     backup:
-#       plugin: "nav2_behaviors/BackUp"
-#     drive_on_heading:
-#       plugin: "nav2_behaviors/DriveOnHeading"
-#     wait:
-#       plugin: "nav2_behaviors/Wait"
-#     global_frame: map
-#     robot_base_frame: base_footprint
-#     transform_tolerance: 0.1 #TF 变换容差
-#     use_sim_time: False
-#     simulate_ahead_time: 2.0 #提前模拟
-#     max_rotational_vel: 0.3  #最大旋转速度（弧度/秒）
-#     min_rotational_vel: 0.05 #最小旋转速度（弧度/秒）
-#     rotational_acc_lim: 0.3  #最大旋转加速度（rad/s^2）
+behavior_server:
+  ros__parameters:
+    costmap_topic: local_costmap/costmap_raw           #用于在局部代价地图上进行碰撞检查的原始代价地图主题。
+    footprint_topic: local_costmap/published_footprint #局部代价地图框架中的足迹主题。
+    cycle_frequency: 10.0 #运行行为插件的频率。
+    behavior_plugins: ["spin", "backup", "drive_on_heading", "wait"] #插件包括：{“旋转”、“后退”、“前进”、“等待”}
+    spin:
+      plugin: "nav2_behaviors/Spin"
+    backup:
+      plugin: "nav2_behaviors/BackUp"
+    drive_on_heading:
+      plugin: "nav2_behaviors/DriveOnHeading"
+    wait:
+      plugin: "nav2_behaviors/Wait"
+    global_frame: odom_combined # 启用了 behavior_server 配置，并将 global_frame 显式设置为 odom_combined。这解决了执行 spin 或 backup 时找不到 odom 坐标系的报错。
+    robot_base_frame: base_footprint
+    transform_tolerance: 0.5 #TF 变换容差
+    use_sim_time: False
+    simulate_ahead_time: 2.0 #提前模拟
+    max_rotational_vel: 0.3  #最大旋转速度（弧度/秒）
+    min_rotational_vel: 0.05 #最小旋转速度（弧度/秒）
+    rotational_acc_lim: 0.3  #最大旋转加速度（rad/s^2）
 
 robot_state_publisher:
   ros__parameters:
