@@ -5,34 +5,36 @@ import sys
 
 def main():
     """
-    使用 SparkFun Qwiic VL53L1X 库读取激光测距传感器数据的示例
+    带诊断信息的 VL53L1X 测距脚本，用于分析数值异常问题
     """
     print("正在初始化 VL53L1X 传感器 (I2C Bus 0)...")
     
     try:
-        # 显式指定 I2C 总线 0
         i2c_driver = LinuxI2C(0)
         sensor = qwiic_vl53l1x.QwiicVL53L1X(address=0x29, i2c_driver=i2c_driver)
         
-        # 检查传感器 ID
         sensor_id = sensor.get_sensor_id()
         if sensor_id == 0:
-            print("未检测到传感器，请检查 I2C 总线和地址 (当前 Bus 0, Address 0x29)。")
+            print("未检测到传感器。")
             return
             
         print(f"检测到传感器，ID: {hex(sensor_id)}")
-        
-        # 初始化传感器
         sensor.sensor_init()
         
-        # 设置距离模式
-        # 1 = Short (最高约 1.3米)
-        # 2 = Long (最高约 4米，受环境光影响)
+        # 模式 1 = Short Range (短距离模式)
+        # 如果需要测更远，可以改为 2 (Long Range)
         sensor.set_distance_mode(1)
         
-        print("开始测距 (按 Ctrl+C 退出)...")
+        # 设置定时预算 (Timing Budget) 和 测量间隔
+        # 增加定时预算可以提高精度和最大距离稳定性
+        sensor.set_timing_budget_in_ms(50)
+        sensor.set_inter_measurement_in_ms(100)
         
-        # 开始连续测距
+        print("开始测距 (按 Ctrl+C 退出)...")
+        print("-" * 70)
+        print(f"{'距离(mm)':<10} | {'状态':<15} | {'信号强度':<10} | {'环境光':<10}")
+        print("-" * 70)
+        
         sensor.start_ranging()
         
         while True:
@@ -40,15 +42,31 @@ def main():
             while sensor.check_for_data_ready() == 0:
                 time.sleep(0.01)
             
-            # 读取距离，单位为毫米 (mm)
             distance = sensor.get_distance()
             
-            # 清除中断以便下一次测量
+            # 获取诊断信息
+            # 状态 0: 有效数据
+            # 状态 1: 信号太弱 (Sigma Failure)
+            # 状态 2: 信号饱和 (Signal saturation)
+            # 状态 4: 包裹错误 (Wrap around) - 意味着测到了比量程更远的东西
+            status = sensor.get_range_status()
+            signal = sensor.get_signal_rate()
+            ambient = sensor.get_ambient_rate()
+            
             sensor.clear_interrupt()
             
-            print(f"当前距离: {distance} mm")
+            # 状态映射
+            status_map = {
+                0: "有效 (Valid)",
+                1: "信号弱 (Sigma)",
+                2: "信号饱和 (Saturat)",
+                4: "溢出 (Wrap)",
+                7: "无效数据 (Invalid)"
+            }
+            status_msg = status_map.get(status, f"代码:{status}")
             
-            # 控制打印频率
+            print(f"{distance:<10d} | {status_msg:<15} | {signal:<10.1f} | {ambient:<10.1f}")
+            
             time.sleep(0.1)
             
     except KeyboardInterrupt:
