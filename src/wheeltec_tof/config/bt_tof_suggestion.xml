@@ -1,0 +1,36 @@
+<!-- 
+行为树建议方案：在导航过程中加入 TOF 障碍物检查
+当 /tof/collision_warning 发布 True 时，触发停止或后退动作。
+-->
+
+<root main_tree_to_execute="MainTree">
+  <BehaviorTree ID="MainTree">
+    <RecoveryNode number_of_retries="6" name="NavigateRecovery">
+      <PipelineSequence name="NavigateWithReplanning">
+        <RateController hz="1.0">
+          <ComputePathToPose goal="{goal}" path="{path}" planner_id="GridBased"/>
+        </RateController>
+        
+        <!-- 使用 ReactiveSequence 持续检查条件 -->
+        <ReactiveSequence name="MonitorObstacles">
+          <!-- 这里假设你有一个订阅 /tof/collision_warning 的 Condition 插件 -->
+          <!-- 或者通过自定义插件判断距离 -->
+          <Inverter>
+             <TopicStatusCondition topic="/tof/collision_warning" message_type="std_msgs/Bool" expected_value="true"/>
+          </Inverter>
+          
+          <FollowPath path="{path}" controller_id="FollowPath"/>
+        </ReactiveSequence>
+      </PipelineSequence>
+      
+      <!-- 恢复策略 -->
+      <ReactiveFallback name="RecoveryFallback">
+        <GoalUpdated/>
+        <Sequence name="TofRecovery">
+           <BackUp backup_dist="0.15" backup_speed="0.05"/>
+           <Wait wait_duration="1.0"/>
+        </Sequence>
+      </RecoveryFallback>
+    </RecoveryNode>
+  </BehaviorTree>
+</root>

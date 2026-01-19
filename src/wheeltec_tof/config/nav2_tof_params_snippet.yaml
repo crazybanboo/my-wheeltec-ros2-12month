@@ -1,0 +1,19 @@
+# 在 Nav2 参数文件 (例如 param_mini_akm.yaml) 的 local_costmap 部分进行如下修改：
+
+local_costmap:
+  local_costmap:
+    ros__parameters:
+      # 1. 在 plugins 列表中添加 "range_layer"
+      plugins: ["voxel_layer", "range_layer", "inflation_layer"]
+      
+      # 2. 添加 range_layer 的具体参数
+      range_layer:
+        plugin: "nav2_costmap_2d::RangeSensorLayer"
+        enabled: True
+        phi: 0.47        # 传感器视场角 (rad)
+        inflate_cone: 0.1 # 锥形膨胀系数
+        no_readings_timeout: 1.0 # 超时时间
+        topics: ["/tof/range"] # 订阅的话题
+        clear_threshold: 0.2   # 清除障碍物的阈值
+        mark_threshold: 0.8    # 标记障碍物的阈值
+        clear_on_max_reading: True # 达到最大量程时是否清除障碍物
