@@ -136,7 +136,7 @@ controller_server:
       wz_max: 2.0       #最大旋转速度（弧度/秒）
       ax_max: 1.5
       ax_min: -1.5
-      ay_max: 0.0
+      ay_max: 1.5
       az_max: 1.5
       iteration_count: 1 #迭代次数
       prune_distance: 1.5 #路径上距离机器人最近点的距离（米）
@@ -179,7 +179,7 @@ controller_server:
         collision_margin_distance: 0.15 #碰撞边缘距离，应该设置在0.05-0.2之间，请确保将此参数设置为预计机器人需要穿越的最窄空间
         near_goal_distance: 0.4 #靠近目标的距离（米）停止应用优先障碍物项，以允许机器人平稳地收敛到靠近障碍物的目标姿势，0.5 --> 0.6 -->0.3(Tues) 
         cost_scaling_factor: 5.0
-        inflation_radius: 0.15  #膨胀半径，仅限Humble
+        inflation_radius: 0.25  #膨胀半径，仅限Humble
 
       PreferForwardCritic: #激励机器人前进，而不是后退
         enabled: true
@@ -201,7 +201,7 @@ controller_server:
       PathAngleCritic: #路径角度评论，机器人在因累积角度误差较大而需要时进行急转弯。
         enabled: true
         cost_power: 1
-        cost_weight: 4.0 #权重参数
+        cost_weight: 10.0 #权重参数 增加路径角度权重，这是最直接的手段。PathAngleCritic 负责让机器人的朝向与全局路径的方向保持一致。增加它的权重会迫使控制器更在意车头的指向。
         offset_from_furthest: 4 #最远偏移量，任何轨迹达到最远路径点之后的路径点数，用于计算相对于的路径角度。
         threshold_to_consider: 0.5 #机器人与目标之间的距离阈值，阈值符合允许目标批评家接管。
         max_angle_to_furthest: 1.0 #机器人与目标之间的角距离
@@ -223,7 +223,7 @@ controller_server_rclcpp_node:
 local_costmap:
   local_costmap:
     ros__parameters:
-      update_frequency: 5.0  #成本地图更新频率
+      update_frequency: 10.0  #成本地图更新频率
       publish_frequency: 2.0 #将成本图发布到话题的频率
       global_frame: map      #全局框架
       robot_base_frame: base_footprint #机器人底座框架
@@ -234,16 +234,17 @@ local_costmap:
       resolution: 0.05     #代价地图1像素的分辨率，以米为单位
       robot_radius: 0.20   #机器人半径，如果未提供足迹坐标，则使用机器人半径。#机器人半径，如果未提供足迹坐标，则使用机器人半径。 如果是圆形全向轮，肯定是这个更好，更省计算资源
       # footprint: "[ [-0.206, -0.208], [-0.206, 0.208],[0.206,0.208],[0.206, -0.208] ]" # 代表了机器人在二维平面上的物理轮廓（外形）,是一个矩形, X 轴（前后）：从 -0.206 到 0.206，总长度约为 41.2 cm。Y 轴（左右）： 从 -0.208 到 0.208，总宽度约为 41.6 cm。优先级： 在 Nav2 中，如果你同时提供了两者，footprint 的优先级更高，robot_radius 会被忽略。
-      plugins: ["voxel_layer","inflation_layer","range_layer"] #插件包括:{“体素层”，“膨胀层”}
+      plugins: ["voxel_layer","range_layer","inflation_layer"] #插件包括:{“体素层”，“膨胀层”}
+      # plugins: ["voxel_layer","inflation_layer"] #插件包括:{“体素层”，“膨胀层”}
       range_layer:
         plugin: "nav2_costmap_2d::RangeSensorLayer"
         enabled: True
-        phi: 3.0 # phi 在此插件中代表“可靠距离范围”（单位：米），建议设置为 3.0 或 3.5, 不要设置为 0.47，否则传感器只能检测 0.47 米以内的障碍物
+        phi: 0.47 # # VL53L1X探测角度为27度，转换为弧度约为0.47
         inflate_cone: 0.1 # 锥形膨胀系数
         no_readings_timeout: 1.0 # 超时时间
         topics: ["/tof/range"] # 订阅的话题
-        clear_threshold: 0.2   # 清除障碍物的阈值
-        mark_threshold: 0.8    # 标记障碍物的阈值
+        clear_threshold: 0.4   # 清除障碍物的阈值。调大（如 0.4）：更容易清除障碍物，即使传感器不太确定是空地也会强行擦除。
+        mark_threshold: 0.8    # 标记障碍物的阈值。调大（如 0.95）：对障碍物非常不敏感，能过滤掉很多噪点，但可能会漏掉一些细小的障碍物。
         clear_on_max_reading: True # 达到最大量程时是否清除障碍物
       inflation_layer:                             #膨胀层参数
         plugin: "nav2_costmap_2d::InflationLayer"  #膨胀层插件。
@@ -311,7 +312,7 @@ global_costmap:
       inflation_layer: #膨胀层参数
         plugin: "nav2_costmap_2d::InflationLayer"  #膨胀层插件
         cost_scaling_factor: 2.0                   #成本缩放因子，决定障碍物成本随距离的递减速度。 现象：如果你发现生成的全局路径（那条红色的细线）总是切角切得太厉害（离墙角太近），或者在宽阔 of 走廊里不走中间，而是歪歪斜斜的。调整：如果你想让机器人规划出的路径离墙远一点，请调小这个值（比如从 10.0 降到 5.0）。
-        inflation_radius: 0.15                     #膨胀半径 （建议调大，让全局路径规划在中间）
+        inflation_radius: 0.25                     #膨胀半径 （建议调大，让全局路径规划在中间）
       always_send_full_costmap: True               #是否每次更新时都发送完整的成本图，而不是更新
   global_costmap_client:
     ros__parameters:
