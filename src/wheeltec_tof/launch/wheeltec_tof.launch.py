@@ -12,10 +12,10 @@ def generate_launch_description():
 
     # Static TF parameters (relative to base_link)
     # Default: 0.1m in front, 0.0m left/right, 0.1m height
-    tf_x = LaunchConfiguration('tf_x', default='0.15')
-    tf_y = LaunchConfiguration('tf_y', default='0.0')
-    tf_z = LaunchConfiguration('tf_z', default='0.1')
-    tf_yaw = LaunchConfiguration('tf_yaw', default='0.0')
+    tf_x = LaunchConfiguration('tf_x', default='0.1414')
+    tf_y = LaunchConfiguration('tf_y', default='-0.1414')
+    tf_z = LaunchConfiguration('tf_z', default='0.0')
+    tf_yaw = LaunchConfiguration('tf_yaw', default='-0.7854') # 右转45°
     tf_pitch = LaunchConfiguration('tf_pitch', default='0.0')
     tf_roll = LaunchConfiguration('tf_roll', default='0.0')
 

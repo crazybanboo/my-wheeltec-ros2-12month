@@ -10,7 +10,7 @@ local_costmap:
       range_layer:
         plugin: "nav2_costmap_2d::RangeSensorLayer"
         enabled: True
-        phi: 0.47        # 传感器视场角 (rad)
+        phi: 3 # phi 在此插件中代表“可靠距离范围”（单位：米），建议设置为 3.0 或 3.5, 不要设置为 0.47，否则传感器只能检测 0.47 米以内的障碍物
         inflate_cone: 0.1 # 锥形膨胀系数
         no_readings_timeout: 1.0 # 超时时间
         topics: ["/tof/range"] # 订阅的话题
