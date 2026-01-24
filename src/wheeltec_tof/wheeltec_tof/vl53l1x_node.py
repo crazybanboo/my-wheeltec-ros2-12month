@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import rclpy
 from rclpy.node import Node
+# from rclpy.qos import QoSProfile, ReliabilityPolicy
 from sensor_msgs.msg import Range
 from std_msgs.msg import Bool
 import qwiic_vl53l1x
@@ -36,6 +37,8 @@ class VL53L1XNode(Node):
         self.publish_rate = self.get_parameter('publish_rate').value
 
         # Publishers
+        # qos_profile = QoSProfile(depth=10)
+        # qos_profile.reliability = ReliabilityPolicy.BEST_EFFORT # 改为 Best Effort 匹配 Nav2
         self.range_pub = self.create_publisher(Range, '/tof/range', 10)
         self.collision_pub = self.create_publisher(Bool, '/tof/collision_warning', 10)
 
@@ -82,14 +85,15 @@ class VL53L1XNode(Node):
                 range_msg.max_range = self.max_range
                 
                 # Check status
-                # 0: Valid, 1: Sigma Fail, 2: Signal Fail, 4: Wrap Around
+                # 0: Valid, 1: Sigma Fail, 2: Signal Fail, 4: Out of Bounds, 7: Wrap Around
                 if status == 0:
                     range_msg.range = distance_m
-                elif status == 4:
-                    # Out of range (Wrap around)
-                    range_msg.range = self.max_range + 0.1
+                elif status in [2, 4, 7]:
+                    # Signal Fail (2), Out of Bounds (4), or Wrap Around (7)
+                    # Treat as "no obstacle detected within max_range"
+                    range_msg.range = self.max_range
                 else:
-                    # Invalid or noisy
+                    # Hardware fail (5) or other errors
                     range_msg.range = float('nan')
 
                 self.range_pub.publish(range_msg)
