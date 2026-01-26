@@ -326,7 +326,10 @@ global_costmap:
         map_subscribe_transient_local: True
       inflation_layer: #膨胀层参数
         plugin: "nav2_costmap_2d::InflationLayer"  #膨胀层插件
-        cost_scaling_factor: 2.0                   #成本缩放因子，决定障碍物成本随距离的递减速度。 现象：如果你发现生成的全局路径（那条红色的细线）总是切角切得太厉害（离墙角太近），或者在宽阔 of 走廊里不走中间，而是歪歪斜斜的。调整：如果你想让机器人规划出的路径离墙远一点，请调小这个值（比如从 10.0 降到 5.0）。
+        # 【修改点 1】大幅降低衰减因子。
+        # 原值 2.0 还可以，但建议降到 1.0 - 1.5。
+        # 这会让障碍物的“斥力场”扩散得更远，让走廊中间成为真正的“谷底”。
+        cost_scaling_factor: 1.2                   #成本缩放因子，决定障碍物成本随距离的递减速度。 现象：如果你发现生成的全局路径（那条红色的细线）总是切角切得太厉害（离墙角太近），或者在宽阔 of 走廊里不走中间，而是歪歪斜斜的。调整：如果你想让机器人规划出的路径离墙远一点，请调小这个值（比如从 10.0 降到 5.0）。
         inflation_radius: 0.5                     #膨胀半径 （建议调大，让全局路径规划在中间）
       always_send_full_costmap: True               #是否每次更新时都发送完整的成本图，而不是更新
   global_costmap_client:
@@ -365,7 +368,10 @@ planner_server: #规划器服务器参数
       max_on_approach_iterations: 1000    # maximum number of iterations to attempt to reach goal once in tolerance, 2D only
       max_planning_time: 5.0              # max time in s for planner to plan, smooth, and upsample. Will scale maximum smoothing and upsampling times based on remaining time after planning.
       motion_model_for_search: "MOORE"   # 2D Moore, Von Neumann; Hybrid Dubin, Redds-Shepp; State Lattice set internally
-      cost_travel_multiplier: 2.0         # For 2D: Cost multiplier to apply to search to steer away from high cost areas. Larger values will place in the center of aisles more exactly (if non-`FREE` cost potential field exists) but take slightly longer to compute. To optimize for speed, a value of 1.0 is reasonable. A reasonable tradeoff value is 2.0. A value of 0.0 effective disables steering away from obstacles and acts like a naive binary search A*.
+      # 【修改点 3】增加路径穿越代价乘数。
+      # 原值 2.0。这个参数告诉规划器：“避开高代价区域”比“走直线”重要多少。
+      # 调大这个值（例如 4.0 或 5.0），会让规划出来的红线死死咬住走廊的中心线。
+      cost_travel_multiplier: 5.0         # For 2D: Cost multiplier to apply to search to steer away from high cost areas. Larger values will place in the center of aisles more exactly (if non-`FREE` cost potential field exists) but take slightly longer to compute. To optimize for speed, a value of 1.0 is reasonable. A reasonable tradeoff value is 2.0. A value of 0.0 effective disables steering away from obstacles and acts like a naive binary search A*.
       angle_quantization_bins: 72         # For Hybrid/Lattice nodes: Number of angle bins for search, must be 1 for 2D node (no angle search)
       analytic_expansion_ratio: 3.5       # For Hybrid/Lattice nodes: The ratio to attempt analytic expansions during search for final approach.
       analytic_expansion_max_cost: 200.0
