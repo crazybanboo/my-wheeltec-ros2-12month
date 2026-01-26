@@ -87,7 +87,7 @@ bt_navigator_rclcpp_node:
 controller_server:
   ros__parameters:
     use_sim_time: False
-    controller_frequency: 10.0           #运行控制器的频率
+    controller_frequency: 5.0           #运行控制器的频率
     # min_x_velocity_threshold: 0.001      #最小 x 速度阈值
     # min_y_velocity_threshold: 0.5        #最小 y 速度阈值
     # min_theta_velocity_threshold: 0.001  #最小速度阈值
@@ -117,6 +117,8 @@ controller_server:
     FollowPath: 
       plugin: "nav2_rotation_shim_controller::RotationShimController" #旋转控制器
       primary_controller: "nav2_mppi_controller::MPPIController" #MPPI控制器
+      reset_period: 3.0                # 允许的最长无指令时间，超过此值才重置（防止抖动）
+      retry_attempt_limit: 5           # 增加失败重试次数，不要轻易重置优化器
       angular_dist_threshold: 0.785
       forward_sampling_distance: 0.5
       rotate_to_heading_angular_vel: 1.8
@@ -125,20 +127,21 @@ controller_server:
       rotate_to_goal_heading: True
     
       time_steps: 30    #候选轨迹中的时间步长（点）数
-      model_dt: 0.2    #每个时间步长的时间步长的长度dt（以秒为单位）是预测范围
-      batch_size: 400  #在给定迭代中从当前最佳控制序列中随机采样的候选轨迹的数量
+      model_dt: 0.2    #修改为0.2以匹配5Hz的控制频率，启用轨迹平移优化
+      batch_size: 1000  #增加采样数量，提升轨迹质量
       vx_std: 0.2       #Vx 的抽样标准差
       vy_std: 0.2       #Vy 的抽样标准差
       wz_std: 0.4       #Wz（角速度）的抽样标准差
-      vx_max: 0.5       #目标最大前进速度（米/秒）
-      vx_min: -0.5      #目标最大反向速度（米/秒）
-      vy_max: 0.5       #如果使用Omni运动模型，目标最大横向速度（m/s）
+      vx_max: 0.3       #目标最大前进速度（米/秒）
+      vx_min: -0.3      #目标最大反向速度（米/秒）
+      vy_max: 0.3       #如果使用Omni运动模型，目标最大横向速度（m/s）
       wz_max: 2.0       #最大旋转速度（弧度/秒）
       ax_max: 1.5
       ax_min: -1.5
       ay_max: 1.5
       az_max: 1.5
       iteration_count: 1 #迭代次数
+      retry_attempt_limit: 2 #增加重试次数，减少直接重置的频率
       prune_distance: 1.5 #路径上距离机器人最近点的距离（米）
       enforce_path_inversion: false
       transform_tolerance: 0.5 #使用 TF（s）进行数据转换的时间容差
@@ -188,6 +191,10 @@ controller_server:
         threshold_to_consider: 0.5 #机器人与目标之间的距离（米）停止考虑前锋并允许目标批评家接管。
       # Option to replace Cost and use Obstacles instead
 
+      # 增加 PathAlignCritic 的权重
+      # 这个评论家的作用是让小车的车身姿态（朝向）与路径保持一致。
+      # 参数位置： controller_server -> FollowPath -> PathAlignCritic -> cost_weight (当前值为 15.0)
+      # 调整建议： 调大到 20.0 ~ 25.0。如果小车虽然在路径上，但车头总是歪着的，调大这个参数很有用。
       PathAlignCritic:  #PathAlignCritic会激励机器人与全局路径保持一致。它不实现路径跟随行为。
         enabled: true
         cost_power: 1
@@ -198,6 +205,10 @@ controller_server:
         offset_from_furthest: 20 #最远偏移量
         use_path_orientations: false #是否在路径对齐中考虑路径的方向
 
+      # 增加 PathAngleCritic 的权重
+      # 它负责处理较大的角度偏离，特别是在转弯处。
+      # 参数位置： controller_server -> FollowPath -> PathAngleCritic -> cost_weight (当前值为 4.0)
+      # 调整建议： 调大到 8.0 ~ 10.0。注释中也提到了，这是让车头指向最直接的手段。
       PathAngleCritic: #路径角度评论，机器人在因累积角度误差较大而需要时进行急转弯。
         enabled: true
         cost_power: 1
@@ -207,10 +218,14 @@ controller_server:
         max_angle_to_furthest: 1.0 #机器人与目标之间的角距离
         mode: 0
 
+      # 增加 PathFollowCritic 的权重
+      # 这个评论家的作用是激励机器人“留在路径上”。
+      # 参数位置： controller_server -> FollowPath -> PathFollowCritic -> cost_weight (当前值为 15.0)
+      # 调整建议： 尝试调大到 20.0 ~ 30.0。增加该权重会增加“偏离路径”的代价，使控制器更努力地让小车中心线贴合路径。
       PathFollowCritic: #路径跟随评论家激励机器人沿着路径前进。
         enabled: true
         cost_power: 1
-        cost_weight: 15.0 #权重参数
+        cost_weight: 60.0 #权重参数
         offset_from_furthest: 5
         threshold_to_consider: 1.4 #机器人与目标之间的距离阈值，停止考虑路径跟随，并允许目标评论家接管。
 #参数参考：https://docs.nav2.org/configuration/packages/configuring-mppic.html
@@ -225,7 +240,7 @@ local_costmap:
     ros__parameters:
       update_frequency: 10.0  #成本地图更新频率
       publish_frequency: 2.0 #将成本图发布到话题的频率
-      global_frame: map      #全局框架
+      global_frame: odom_combined      #全局框架
       robot_base_frame: base_footprint #机器人底座框架
       use_sim_time: False  #仿真时间
       rolling_window: true #成本地图是否应随机器人基座框架滚动
@@ -248,8 +263,8 @@ local_costmap:
         clear_on_max_reading: True # 达到最大量程时是否清除障碍物
       inflation_layer:                             #膨胀层参数
         plugin: "nav2_costmap_2d::InflationLayer"  #膨胀层插件。
-        cost_scaling_factor: 10.0                   #成本缩放因子，决定障碍物成本随距离的递减速度。建议从 3.0 改为 5.0，使障碍物成本随距离衰减更快，允许机器人靠墙更近，如果窄路过不去，可以尝试调大到 7.0 或 10.0
-        inflation_radius: 0.35                     #膨胀半径 (由0.25改为0.35让机器人离墙远点)
+        cost_scaling_factor: 9.0                   #成本缩放因子，决定障碍物成本随距离的递减速度。建议从 3.0 改为 5.0，使障碍物成本随距离衰减更快，允许机器人靠墙更近，如果窄路过不去，可以尝试调大到 7.0 或 10.0
+        inflation_radius: 0.5                     #膨胀半径 (由0.25改为0.35让机器人离墙远点)
       voxel_layer:
         plugin: "nav2_costmap_2d::VoxelLayer"      #体素层插件。
         enabled: True
@@ -312,7 +327,7 @@ global_costmap:
       inflation_layer: #膨胀层参数
         plugin: "nav2_costmap_2d::InflationLayer"  #膨胀层插件
         cost_scaling_factor: 2.0                   #成本缩放因子，决定障碍物成本随距离的递减速度。 现象：如果你发现生成的全局路径（那条红色的细线）总是切角切得太厉害（离墙角太近），或者在宽阔 of 走廊里不走中间，而是歪歪斜斜的。调整：如果你想让机器人规划出的路径离墙远一点，请调小这个值（比如从 10.0 降到 5.0）。
-        inflation_radius: 0.25                     #膨胀半径 （建议调大，让全局路径规划在中间）
+        inflation_radius: 0.5                     #膨胀半径 （建议调大，让全局路径规划在中间）
       always_send_full_costmap: True               #是否每次更新时都发送完整的成本图，而不是更新
   global_costmap_client:
     ros__parameters:

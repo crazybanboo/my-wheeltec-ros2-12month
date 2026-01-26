@@ -288,5 +288,11 @@ class turn_on_robot : public rclcpp::Node
         float Charging_Current=0;  //Charging_Current //充电电流
         uint8_t Red=0;                //Whether the robot finds the marker bit of infrared signal (charging pile)  //机器人是否寻找到红外信号(充电桩)的标志位 
         float odom_x_scale,odom_y_scale,odom_z_scale_positive,odom_z_scale_negative; //Odometer correction parameters //里程计修正参数
+        //IMU静态零偏校准相关变量
+        bool is_calibrating;
+        float gyro_bias_x, gyro_bias_y, gyro_bias_z;
+        float cal_sum_x, cal_sum_y, cal_sum_z;
+        int cal_count;
+        float cal_sampling_time;
 };
 #endif

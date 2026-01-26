@@ -843,6 +843,31 @@ void turn_on_robot::Control()
       Robot_Pos.Y+=(Robot_Vel.X * sin(Robot_Pos.Z) + Robot_Vel.Y * cos(Robot_Pos.Z)) * Sampling_Time; //Calculate the displacement in the Y direction, unit: m //计算Y方向的位移，单位：m
       Robot_Pos.Z+=Robot_Vel.Z * Sampling_Time; //The angular displacement about the Z axis, in rad //绕Z轴的角位移，单位：rad 
 
+      //IMU 静态零偏自校准逻辑
+      if (is_calibrating)
+      {
+        cal_sum_x += Mpu6050.angular_velocity.x;
+        cal_sum_y += Mpu6050.angular_velocity.y;
+        cal_sum_z += Mpu6050.angular_velocity.z;
+        cal_count++;
+        cal_sampling_time += Sampling_Time;
+
+        if (cal_sampling_time >= 3.0) // 采样3秒
+        {
+          gyro_bias_x = cal_sum_x / cal_count;
+          gyro_bias_y = cal_sum_y / cal_count;
+          gyro_bias_z = cal_sum_z / cal_count;
+          is_calibrating = false;
+          RCLCPP_INFO(this->get_logger(), "IMU Calibration Finished! Bias: x=%.6f, y=%.6f, z=%.6f", 
+                      gyro_bias_x, gyro_bias_y, gyro_bias_z);
+        }
+      }
+
+      // 应用零偏修正
+      Mpu6050.angular_velocity.x -= gyro_bias_x;
+      Mpu6050.angular_velocity.y -= gyro_bias_y;
+      Mpu6050.angular_velocity.z -= gyro_bias_z;
+
       //Calculate the three-axis attitude from the IMU with the angular velocity around the three-axis and the three-axis acceleration
       //通过IMU绕三轴角速度与三轴加速度计算三轴姿态
       Quaternion_Solution(Mpu6050.angular_velocity.x, Mpu6050.angular_velocity.y, Mpu6050.angular_velocity.z,\
@@ -925,6 +950,13 @@ turn_on_robot::turn_on_robot():rclcpp::Node ("wheeltec_robot")
   this->get_parameter("odom_y_scale", odom_y_scale);
   this->get_parameter("odom_z_scale_positive", odom_z_scale_positive);
   this->get_parameter("odom_z_scale_negative", odom_z_scale_negative);
+
+  //初始化IMU校准变量
+  is_calibrating = true;
+  gyro_bias_x = 0; gyro_bias_y = 0; gyro_bias_z = 0;
+  cal_sum_x = 0; cal_sum_y = 0; cal_sum_z = 0;
+  cal_count = 0;
+  cal_sampling_time = 0;
 
   //将car_mode转换为小写，便于后续判断车型模式
   std::transform(car_mode.begin(), car_mode.end(), car_mode.begin(),
