@@ -39,7 +39,7 @@ lscx:
 # 可选imu型号 对应填入imu_mode
   # stm32  H30 
 
-imu_mode: stm32 
+imu_mode: H30 
 
 # 可选相机型号 对应填入camera_mode
   # astra  astra_pro   dabai_u3   gemini   usb

@@ -1,6 +1,7 @@
 import os
 import yaml
 from pathlib import Path
+from typing import List, Union
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, OpaqueFunction
 from launch.substitutions import LaunchConfiguration
@@ -20,7 +21,7 @@ def load_yaml(file_path: str) -> dict:
 # -------------------------------------------------
 # 根据 imu_mode 生成节点列表
 # -------------------------------------------------
-def include_imu_launch(context, *args, **kwargs):
+def include_imu_launch(context, *args, **kwargs) -> List[Union[Node, IncludeLaunchDescription]]:
     # 1) 读取默认 imu_mode（yaml 中）
     cfg_path = LaunchConfiguration('imu_mode_yaml').perform(context)
     cfg = load_yaml(cfg_path)
@@ -31,7 +32,7 @@ def include_imu_launch(context, *args, **kwargs):
     car_cfg = load_yaml(parm_file)
     car_mode = LaunchConfiguration('car_mode').perform(context) or car_cfg['car_mode']
     ranger_avoid_flag = LaunchConfiguration('ranger_avoid_flag').perform(context) or car_cfg['ranger_avoid_flag']
-    
+
     # 公共参数
     common_params = {
         'usart_port_name': '/dev/wheeltec_controller',
@@ -49,37 +50,41 @@ def include_imu_launch(context, *args, **kwargs):
         'ranger_avoid_flag': ranger_avoid_flag
     }
 
-    nodes = []
-    remappings=[('imu/data_raw', 'imu/data_board')]
-    # wheeltec 主节点
+    # 根据 imu_mode 确定 wheeltec 节点的 IMU 话题重映射
     if imu_mode == 'stm32':
-        remappings = []
-        
+        # stm32 IMU：使用默认话题，不做重映射
+        wheeltec_remappings = []
+    elif imu_mode == 'H30':
+        # H30 IMU：使用 yesense 节点发布 IMU 数据
+        # 将 wheeltec 节点的 IMU 话题重映射为无效话题，避免与 yesense 冲突
+        wheeltec_remappings = [('imu/data_raw', '/imu/data_raw_dummy')]
+    else:
+        raise ValueError(f'Unsupported imu_mode: {imu_mode}')
+
+    # 创建 wheeltec 主节点（只创建一次）
     wheeltec_node = Node(
         package='turn_on_wheeltec_robot',
         executable='wheeltec_robot_node',
         output='screen',
         parameters=[common_params],
-        remappings=remappings,
+        remappings=wheeltec_remappings,
     )
-    nodes.append(wheeltec_node)
-    if imu_mode == 'stm32':
-        remappings = []
-    elif imu_mode == 'H30':
-        nodes.append(
-                    IncludeLaunchDescription(
-                        PythonLaunchDescriptionSource([
-                            os.path.join(
-                                get_package_share_directory('yesense_std_ros2'),
-                                'launch',
-                                'yesense_node.launch.py'
-                            )
-                        ])
-                    )
-            )
+    nodes: List[Union[Node, IncludeLaunchDescription]] = [wheeltec_node]
 
-    else:
-        raise ValueError(f'Unsupported imu_mode: {imu_mode}')
+    # H30 模式：额外启动 yesense IMU 节点
+    if imu_mode == 'H30':
+        nodes.append(
+            IncludeLaunchDescription(
+                PythonLaunchDescriptionSource([
+                    os.path.join(
+                        get_package_share_directory('yesense_std_ros2'),
+                        'launch',
+                        'yesense_node.launch.py'
+                    )
+                ])
+            )
+        )
+
     return nodes
 
 
