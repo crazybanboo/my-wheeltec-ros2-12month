@@ -87,7 +87,7 @@ bt_navigator_rclcpp_node:
 controller_server:
   ros__parameters:
     use_sim_time: False
-    controller_frequency: 5.0           #运行控制器的频率
+    controller_frequency: 10.0           #运行控制器的频率
     # min_x_velocity_threshold: 0.001      #最小 x 速度阈值
     # min_y_velocity_threshold: 0.5        #最小 y 速度阈值
     # min_theta_velocity_threshold: 0.001  #最小速度阈值
@@ -127,7 +127,7 @@ controller_server:
       rotate_to_goal_heading: True
     
       time_steps: 30    #候选轨迹中的时间步长（点）数
-      model_dt: 0.2    #修改为0.2以匹配5Hz的控制频率，启用轨迹平移优化
+      model_dt: 0.1    #修改为0.2以匹配5Hz的控制频率，启用轨迹平移优化
       batch_size: 1000  #增加采样数量，提升轨迹质量
       vx_std: 0.2       #Vx 的抽样标准差
       vy_std: 0.2       #Vy 的抽样标准差
