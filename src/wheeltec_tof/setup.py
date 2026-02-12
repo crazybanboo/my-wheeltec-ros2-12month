@@ -21,7 +21,8 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'vl53l1x_node = wheeltec_tof.vl53l1x_node:main'
+            'vl53l1x_node = wheeltec_tof.vl53l1x_node:main',
+            'vl53l1x_array_node = wheeltec_tof.vl53l1x_array_node:main'
         ],
     },
 )

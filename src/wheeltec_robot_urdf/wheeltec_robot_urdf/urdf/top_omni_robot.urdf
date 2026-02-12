@@ -362,4 +362,198 @@
     <axis
       xyz="0 0 0" />
   </joint>
+
+  <!-- TOF Sensor Links and Joints (8 sensors in circular array) -->
+  <!-- Sensor 0: Front (0 degrees) -->
+  <link name="tof_link_0">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="0.01" length="0.02"/>
+      </geometry>
+      <material name="tof_material">
+        <color rgba="0.2 0.2 0.8 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="0.01" length="0.02"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="tof_joint_0" type="fixed">
+    <origin xyz="0.25 0.0 0.05" rpy="0 0 0"/>
+    <parent link="base_link"/>
+    <child link="tof_link_0"/>
+  </joint>
+
+  <!-- Sensor 1: Front-Right (45 degrees) -->
+  <link name="tof_link_1">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="0.01" length="0.02"/>
+      </geometry>
+      <material name="tof_material">
+        <color rgba="0.2 0.2 0.8 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="0.01" length="0.02"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="tof_joint_1" type="fixed">
+    <origin xyz="0.177 -0.177 0.05" rpy="0 0 -0.785"/>
+    <parent link="base_link"/>
+    <child link="tof_link_1"/>
+  </joint>
+
+  <!-- Sensor 2: Right (90 degrees) -->
+  <link name="tof_link_2">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="0.01" length="0.02"/>
+      </geometry>
+      <material name="tof_material">
+        <color rgba="0.2 0.2 0.8 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="0.01" length="0.02"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="tof_joint_2" type="fixed">
+    <origin xyz="0.0 -0.25 0.05" rpy="0 0 -1.571"/>
+    <parent link="base_link"/>
+    <child link="tof_link_2"/>
+  </joint>
+
+  <!-- Sensor 3: Back-Right (135 degrees) -->
+  <link name="tof_link_3">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="0.01" length="0.02"/>
+      </geometry>
+      <material name="tof_material">
+        <color rgba="0.2 0.2 0.8 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="0.01" length="0.02"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="tof_joint_3" type="fixed">
+    <origin xyz="-0.177 -0.177 0.05" rpy="0 0 -2.356"/>
+    <parent link="base_link"/>
+    <child link="tof_link_3"/>
+  </joint>
+
+  <!-- Sensor 4: Back (180 degrees) -->
+  <link name="tof_link_4">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="0.01" length="0.02"/>
+      </geometry>
+      <material name="tof_material">
+        <color rgba="0.2 0.2 0.8 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="0.01" length="0.02"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="tof_joint_4" type="fixed">
+    <origin xyz="-0.25 0.0 0.05" rpy="0 0 3.141"/>
+    <parent link="base_link"/>
+    <child link="tof_link_4"/>
+  </joint>
+
+  <!-- Sensor 5: Back-Left (225 degrees) -->
+  <link name="tof_link_5">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="0.01" length="0.02"/>
+      </geometry>
+      <material name="tof_material">
+        <color rgba="0.2 0.2 0.8 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="0.01" length="0.02"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="tof_joint_5" type="fixed">
+    <origin xyz="-0.177 0.177 0.05" rpy="0 0 2.356"/>
+    <parent link="base_link"/>
+    <child link="tof_link_5"/>
+  </joint>
+
+  <!-- Sensor 6: Left (270 degrees) -->
+  <link name="tof_link_6">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="0.01" length="0.02"/>
+      </geometry>
+      <material name="tof_material">
+        <color rgba="0.2 0.2 0.8 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="0.01" length="0.02"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="tof_joint_6" type="fixed">
+    <origin xyz="0.0 0.25 0.05" rpy="0 0 1.571"/>
+    <parent link="base_link"/>
+    <child link="tof_link_6"/>
+  </joint>
+
+  <!-- Sensor 7: Front-Left (315 degrees) -->
+  <link name="tof_link_7">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="0.01" length="0.02"/>
+      </geometry>
+      <material name="tof_material">
+        <color rgba="0.2 0.2 0.8 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="0.01" length="0.02"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="tof_joint_7" type="fixed">
+    <origin xyz="0.177 0.177 0.05" rpy="0 0 0.785"/>
+    <parent link="base_link"/>
+    <child link="tof_link_7"/>
+  </joint>
+
 </robot>

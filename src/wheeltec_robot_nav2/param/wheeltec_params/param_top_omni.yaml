@@ -257,7 +257,7 @@ local_costmap:
         phi: 0.47 # # VL53L1X探测角度为27度，转换为弧度约为0.47
         inflate_cone: 0.1 # 锥形膨胀系数
         no_readings_timeout: 1.0 # 超时时间
-        topics: ["/tof/range"] # 订阅的话题
+        topics: ["/tof/range_0", "/tof/range_1", "/tof/range_2", "/tof/range_3", "/tof/range_4", "/tof/range_5", "/tof/range_6", "/tof/range_7"] # 订阅的话题
         clear_threshold: 0.4   # 清除障碍物的阈值。调大（如 0.4）：更容易清除障碍物，即使传感器不太确定是空地也会强行擦除。
         mark_threshold: 0.8    # 标记障碍物的阈值。调大（如 0.95）：对障碍物非常不敏感，能过滤掉很多噪点，但可能会漏掉一些细小的障碍物。
         clear_on_max_reading: True # 达到最大量程时是否清除障碍物
