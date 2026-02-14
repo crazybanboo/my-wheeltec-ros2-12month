@@ -53,7 +53,7 @@ class VL53L1XArrayNode(Node):
         self.declare_parameter('collision_threshold', 0.2)  # meters
         self.declare_parameter('range_mode', 1)    # 1=Short, 2=Long
         self.declare_parameter('timing_budget', 50)  # ms
-        self.declare_parameter('inter_measurement', 60)  # ms
+        self.declare_parameter('inter_measurement', 100)  # ms - sync with 10Hz publish rate
         self.declare_parameter('publish_rate', 10.0)  # Hz
         self.declare_parameter('power_cycle_on_init', True)
         self.declare_parameter('field_of_view', 0.4712)  # 27 degrees in radians
@@ -200,77 +200,67 @@ class VL53L1XArrayNode(Node):
         active = sum(self.sensor_status)
         self.get_logger().info(f"Sensor initialization complete: {active}/8 active")
 
-    def read_sensor(self, channel):
-        """Read distance from a single sensor.
+    def generate_range_msg(self, ch, stamp, distance_m, status):
+        """Generate Range message from sensor reading."""
+        range_msg = Range()
+        range_msg.header.stamp = stamp
+        range_msg.header.frame_id = self.frame_ids[ch]
+        range_msg.radiation_type = Range.INFRARED
+        range_msg.field_of_view = self.field_of_view
+        range_msg.min_range = self.min_range
+        range_msg.max_range = self.max_range
 
-        Args:
-            channel: Sensor channel (0-7)
+        if status == 0:
+            # Valid measurement
+            range_msg.range = distance_m
+        elif status in [1, 2, 4, 7]:
+            # Weak signal, saturation, or overflow - treat as max range
+            range_msg.range = self.max_range
+        else:
+            # Invalid status
+            range_msg.range = float('nan')
 
-        Returns:
-            tuple: (distance_meters, status_code) or (None, None) if failed
-        """
-        sensor = self.sensors[channel]
-        if sensor is None:
-            return None, None
-
-        try:
-            self.select_tca_channel(channel)
-
-            # Wait for data ready with retry
-            retry = 0
-            while sensor.check_for_data_ready() == 0 and retry < 10:
-                time.sleep(0.005)
-                retry += 1
-
-            if retry >= 10:
-                return None, None
-
-            distance_mm = sensor.get_distance()
-            status = sensor.get_range_status()
-            sensor.clear_interrupt()
-
-            distance_m = distance_mm / 1000.0
-            return distance_m, status
-
-        except Exception as e:
-            self.get_logger().debug(f"Error reading channel {channel}: {e}")
-            return None, None
+        return range_msg
 
     def timer_callback(self):
-        """Read all sensors and publish Range messages."""
+        """
+        优化后的回调：
+        1. 移除 while 循环和 time.sleep
+        2. 每个通道仅进行一次查询，降低 I2C 负载
+        """
         collision_detected = False
         current_time = self.get_clock().now().to_msg()
 
         for ch in range(8):
-            distance, status = self.read_sensor(ch)
+            if not self.sensor_status[ch]:
+                continue
 
-            # Create Range message
-            range_msg = Range()
-            range_msg.header.stamp = current_time
-            range_msg.header.frame_id = self.frame_ids[ch]
-            range_msg.radiation_type = Range.INFRARED
-            range_msg.field_of_view = self.field_of_view
-            range_msg.min_range = self.min_range
-            range_msg.max_range = self.max_range
+            sensor = self.sensors[ch]
+            try:
+                # 切换通道
+                self.select_tca_channel(ch)
 
-            if distance is None:
-                # Sensor offline or read error
-                range_msg.range = float('nan')
-            elif status == 0:
-                # Valid measurement
-                range_msg.range = distance
+                # --- 关键优化：只检查一次，不迭代等待 ---
+                # 如果硬件还没准备好，直接跳过这一帧，不阻塞 CPU
+                if sensor.check_for_data_ready() != 0:
+                    distance_mm = sensor.get_distance()
+                    status = sensor.get_range_status()
+                    sensor.clear_interrupt()
 
-                # Check collision threshold
-                if distance < self.collision_threshold:
-                    collision_detected = True
-            elif status in [1, 2, 4, 7]:
-                # Weak signal, saturation, or overflow - treat as max range
-                range_msg.range = self.max_range
-            else:
-                # Invalid status
-                range_msg.range = float('nan')
+                    distance_m = distance_mm / 1000.0
 
-            self.range_pubs[ch].publish(range_msg)
+                    # 发布数据逻辑
+                    range_msg = self.generate_range_msg(ch, current_time, distance_m, status)
+                    self.range_pubs[ch].publish(range_msg)
+
+                    if status == 0 and distance_m < self.collision_threshold:
+                        collision_detected = True
+                else:
+                    # 如果数据没好，直接跳过
+                    pass
+
+            except Exception as e:
+                self.get_logger().debug(f"Channel {ch} read error: {e}")
 
         # Publish collision warning
         collision_msg = Bool()
