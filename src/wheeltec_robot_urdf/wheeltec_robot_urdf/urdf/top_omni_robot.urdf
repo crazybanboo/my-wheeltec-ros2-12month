@@ -383,7 +383,7 @@
     </collision>
   </link>
   <joint name="tof_joint_0" type="fixed">
-    <origin xyz="0.25 0.0 0.05" rpy="0 0 0"/>
+    <origin xyz="0.0 -0.2 0.0" rpy="0 0 -1.57"/>
     <parent link="base_link"/>
     <child link="tof_link_0"/>
   </joint>
@@ -407,7 +407,7 @@
     </collision>
   </link>
   <joint name="tof_joint_1" type="fixed">
-    <origin xyz="0.177 -0.177 0.05" rpy="0 0 -0.785"/>
+    <origin xyz="0.0516 -0.193 0.0" rpy="0 0 -1.308"/>
     <parent link="base_link"/>
     <child link="tof_link_1"/>
   </joint>
@@ -431,7 +431,7 @@
     </collision>
   </link>
   <joint name="tof_joint_2" type="fixed">
-    <origin xyz="0.0 -0.25 0.05" rpy="0 0 -1.571"/>
+    <origin xyz="-0.1532 -0.1284 0.0" rpy="0 0 -2.442"/>
     <parent link="base_link"/>
     <child link="tof_link_2"/>
   </joint>
@@ -455,7 +455,7 @@
     </collision>
   </link>
   <joint name="tof_joint_3" type="fixed">
-    <origin xyz="-0.177 -0.177 0.05" rpy="0 0 -2.356"/>
+    <origin xyz="0.193 -0.0516 0.0" rpy="0 0 -0.262"/>
     <parent link="base_link"/>
     <child link="tof_link_3"/>
   </joint>
@@ -479,7 +479,7 @@
     </collision>
   </link>
   <joint name="tof_joint_4" type="fixed">
-    <origin xyz="-0.25 0.0 0.05" rpy="0 0 3.141"/>
+    <origin xyz="0.0844 0.1812 0.0" rpy="0 0 1.134"/>
     <parent link="base_link"/>
     <child link="tof_link_4"/>
   </joint>
@@ -503,7 +503,7 @@
     </collision>
   </link>
   <joint name="tof_joint_5" type="fixed">
-    <origin xyz="-0.177 0.177 0.05" rpy="0 0 2.356"/>
+    <origin xyz="0.193 0.0516 0.0" rpy="0 0 0.262"/>
     <parent link="base_link"/>
     <child link="tof_link_5"/>
   </joint>
@@ -527,7 +527,7 @@
     </collision>
   </link>
   <joint name="tof_joint_6" type="fixed">
-    <origin xyz="0.0 0.25 0.05" rpy="0 0 1.571"/>
+    <origin xyz="0.0 0.2 0.0" rpy="0 0 -4.710"/>
     <parent link="base_link"/>
     <child link="tof_link_6"/>
   </joint>
@@ -551,7 +551,7 @@
     </collision>
   </link>
   <joint name="tof_joint_7" type="fixed">
-    <origin xyz="0.177 0.177 0.05" rpy="0 0 0.785"/>
+    <origin xyz="-0.1532 0.1284 0.0" rpy="0 0 -3.838"/>
     <parent link="base_link"/>
     <child link="tof_link_7"/>
   </joint>
