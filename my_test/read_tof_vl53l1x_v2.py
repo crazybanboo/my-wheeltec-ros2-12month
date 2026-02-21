@@ -78,7 +78,7 @@ def main():
             time.sleep(0.5)
 
         if init_success:
-            sensor.set_distance_mode(1)  # 2: 长距离模式 1: 短距离模式
+            sensor.set_distance_mode(2)  # 2: 长距离模式 1: 短距离模式
             sensor.set_timing_budget_in_ms(50)
             sensor.set_inter_measurement_in_ms(60)
             sensor.start_ranging()

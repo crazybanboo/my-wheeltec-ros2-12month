@@ -48,7 +48,7 @@ def generate_launch_description():
                               description='Maximum range in meters'),
         DeclareLaunchArgument('collision_threshold', default_value='0.2',
                               description='Collision warning threshold in meters'),
-        DeclareLaunchArgument('range_mode', default_value='1',
+        DeclareLaunchArgument('range_mode', default_value='2', # 在没有外部输入的情况下，这里是最先使用的默认值
                               description='Distance mode: 1=Short (up to 1.3m), 2=Long (up to 4m)'),
         DeclareLaunchArgument('timing_budget', default_value='50',
                               description='Measurement timing budget in ms'),
