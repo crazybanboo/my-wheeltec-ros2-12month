@@ -22,7 +22,7 @@ class VL53L1XArrayNode(Node):
     """ROS2 node for controlling 8 VL53L1X sensors via TCA9548A multiplexer."""
 
     # XSHUT pin mapping (BOARD encoding) for each sensor channel
-    DEFAULT_XSHUT_PINS = [38, 26, 24, 22, 18, 12, 10, 8]
+    DEFAULT_XSHUT_PINS = [18, 24, 26, 22, 10, 12, 8, 38]
 
     # Default sensor positions based on circular layout
     DEFAULT_FRAME_IDS = [
@@ -145,7 +145,8 @@ class VL53L1XArrayNode(Node):
             # Pull all XSHUT high (enable)
             for pin in self.xshut_pins:
                 GPIO.output(pin, GPIO.HIGH)
-            time.sleep(0.3)
+                time.sleep(0.1)  # 给 100ms 间隔缓解电流，并让传感器稳定
+            time.sleep(0.5) # 增加到 500ms，确保电源彻底稳定
 
             self.get_logger().info("Power cycle complete")
 
@@ -161,42 +162,55 @@ class VL53L1XArrayNode(Node):
         if 0 <= channel <= 7:
             try:
                 self.smbus.write_byte(self.tca9548a_addr, 1 << channel)
-                time.sleep(0.01)
+                # time.sleep(0.01) # 现在不达标10hz，现暂时屏蔽看看
             except Exception as e:
                 self.get_logger().warn(f"Failed to select TCA channel {channel}: {e}")
 
     def initialize_sensors(self):
-        """Initialize all 8 sensors through TCA9548A."""
+        """Initialize all 8 sensors through TCA9548A with individual XSHUT control."""
         self.get_logger().info("Initializing VL53L1X sensor array...")
 
         for ch in range(8):
             self.select_tca_channel(ch)
+            time.sleep(0.05)  # 给 I2C 切换留出一点物理稳定时间 
 
-            try:
-                sensor = qwiic_vl53l1x.QwiicVL53L1X(
-                    address=self.vl53l1x_addr,
-                    i2c_driver=self.i2c_driver
-                )
+            # Try to initialize sensor with retry logic (max 3 attempts)
+            init_success = False
+            for attempt in range(3):
+                try:
+                    sensor = qwiic_vl53l1x.QwiicVL53L1X(
+                        address=self.vl53l1x_addr,
+                        i2c_driver=self.i2c_driver
+                    )
 
-                if sensor.sensor_init():
-                    sensor.set_distance_mode(self.range_mode)
-                    sensor.set_timing_budget_in_ms(self.timing_budget)
-                    sensor.set_inter_measurement_in_ms(self.inter_measurement)
-                    sensor.start_ranging()
+                    ret = sensor.sensor_init()
+                    self.get_logger().info(f"ret: {ret}")
+                    if ret == None:
+                        sensor.set_distance_mode(self.range_mode)
+                        sensor.set_timing_budget_in_ms(self.timing_budget)
+                        sensor.set_inter_measurement_in_ms(self.inter_measurement)
+                        sensor.start_ranging()
 
-                    self.sensors[ch] = sensor
-                    self.sensor_status[ch] = True
-                    self.get_logger().info(f"  Channel {ch}: [OK] - {self.frame_ids[ch]}")
-                else:
-                    self.sensors[ch] = None
-                    self.sensor_status[ch] = False
-                    self.get_logger().warn(f"  Channel {ch}: [FAILED] - init failed")
+                        self.sensors[ch] = sensor
+                        self.sensor_status[ch] = True
+                        self.get_logger().info(f"  Channel {ch}: [OK] - {self.frame_ids[ch]} (attempt {attempt + 1}/3)")
+                        init_success = True
+                        break
+                    else:
+                        self.get_logger().warn(f"  Channel {ch}: init failed (attempt {attempt + 1}/3)")
+                        if attempt < 2:
+                            time.sleep(0.1)  # Wait before retry
 
-            except Exception as e:
+                except Exception as e:
+                    self.get_logger().warn(f"  Channel {ch}: error (attempt {attempt + 1}/3) - {e}")
+                    if attempt < 2:
+                        time.sleep(0.1)  # Wait before retry
+
+            if not init_success:
                 self.sensors[ch] = None
                 self.sensor_status[ch] = False
-                self.get_logger().warn(f"  Channel {ch}: [FAILED] - {e}")
-
+                self.get_logger().warn(f"  Channel {ch}: [FAILED] - all 3 attempts exhausted")
+            
         active = sum(self.sensor_status)
         self.get_logger().info(f"Sensor initialization complete: {active}/8 active")
 
@@ -213,7 +227,7 @@ class VL53L1XArrayNode(Node):
         if status == 0:
             # Valid measurement
             range_msg.range = distance_m
-        elif status in [1, 2, 4, 7]:
+        elif status in [1, 2, 4, 7]: # TODO: 对于状态1 弱信号：户外阳光下、黑色物体 这里可以做 中值滤波 https://gemini.google.com/u/2/app/4bf3617710b2e7d6?hl=zh&pageId=none
             # Weak signal, saturation, or overflow - treat as max range
             range_msg.range = self.max_range
         else:
