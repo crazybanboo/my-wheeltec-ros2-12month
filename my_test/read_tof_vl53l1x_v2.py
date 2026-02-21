@@ -69,8 +69,15 @@ def main():
         # 创建传感器实例
         sensor = qwiic_vl53l1x.QwiicVL53L1X(address=VL53L1X_ADDR, i2c_driver=i2c_driver)
         
-        # 尝试初始化
-        if sensor.sensor_init() == None:
+        # 尝试初始化（带重试机制）
+        init_success = False
+        for retry in range(3):
+            if sensor.sensor_init() == None:
+                init_success = True
+                break
+            time.sleep(0.5)
+
+        if init_success:
             sensor.set_distance_mode(1)  # 2: 长距离模式 1: 短距离模式
             sensor.set_timing_budget_in_ms(50)
             sensor.set_inter_measurement_in_ms(60)
