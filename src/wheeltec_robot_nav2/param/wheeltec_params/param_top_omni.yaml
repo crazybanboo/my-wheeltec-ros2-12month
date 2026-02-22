@@ -115,7 +115,8 @@ controller_server:
       yaw_goal_tolerance: 0.25 #yaw目标容差
     # DWB parameters
     FollowPath: 
-      plugin: "nav2_rotation_shim_controller::RotationShimController" #旋转控制器
+      # plugin: "nav2_rotation_shim_controller::RotationShimController" #旋转控制器 （自从我将这个屏蔽后，开启了下面的，定位时就没卡顿过）
+      plugin: "nav2_mppi_controller::MPPIController"
       primary_controller: "nav2_mppi_controller::MPPIController" #MPPI控制器
       reset_period: 3.0                # 允许的最长无指令时间，超过此值才重置（防止抖动）
       retry_attempt_limit: 5           # 增加失败重试次数，不要轻易重置优化器
