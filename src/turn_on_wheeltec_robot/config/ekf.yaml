@@ -4,7 +4,7 @@ ekf_filter_node:
         # -------------------------------
         # 通用滤波器配置
         # -------------------------------
-        frequency: 20.0  # 决定EKF每秒输出几次位置估计
+        frequency: 5.0  # 决定EKF每秒输出几次位置估计
         sensor_timeout: 0.1  # 如果某个传感器超过这个时间没发消息，EKF 就不再用它的数据
         two_d_mode: true  
         transform_time_offset: 0.0  #输出TF时间偏移

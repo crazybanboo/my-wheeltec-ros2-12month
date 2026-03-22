@@ -15,7 +15,7 @@ def generate_launch_description():
         package="wheeltec_mic_ros2",
         executable="voice_control",
         output='screen',
-        parameters=[{"appid": "b7d78d65"}]
+        parameters=[{"appid": "e500192e"}]
     )
 
     ld = LaunchDescription()

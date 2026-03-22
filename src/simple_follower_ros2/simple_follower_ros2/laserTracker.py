@@ -43,7 +43,7 @@ class LaserTracker(Node):
 		sortedIndices = np.argsort(ranges)
 		minDistanceID = None
 		minDistance   = float('inf')
-		self.get_logger().info('debug 0000...')	
+		# self.get_logger().info('debug 0000...')	
 		if(not(self.lastScan is None)):
 			# if we already have a last scan to compare to:
 			for i in sortedIndices:
@@ -52,7 +52,7 @@ class LaserTracker(Node):
 				a = i-2
 				b = i+3
 				c = len(self.lastScan)
-				self.get_logger().info('debug 1111...')	
+				# self.get_logger().info('debug 1111...')	
 				windowIndex = np.clip([a,b],0,c)
 				window = self.lastScan[windowIndex[0]:windowIndex[1]]
 				with np.errstate(invalid='ignore'):

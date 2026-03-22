@@ -10,18 +10,18 @@ command_recognition:
         ang_vel_z : 0.5             #小车移动的Z轴角速度
         
         #语音导航I点坐标。
-        I_position_x : 2.0             
-        I_position_y : 0.0 
+        I_position_x : 0.407535         
+        I_position_y : 1.66595
         I_orientation_z : 0.0 
         I_orientation_w : 1.0 
         #语音导航J点坐标。
-        J_position_x : 1.0              
-        J_position_y : -1.0 
+        J_position_x : -0.116971              
+        J_position_y : -4.67851
         J_orientation_z : 0.0 
         J_orientation_w : 1.0 
         #语音导航K点坐标。
-        K_position_x : 2.0             
-        K_position_y : 1.0 
+        K_position_x : -2.11943
+        K_position_y : -1.72041
         K_orientation_z : 0.0 
         K_orientation_w : 1.0
 

@@ -22,7 +22,7 @@ def generate_launch_description():
 
     param_dir = os.path.join(wheeltec_nav_dir, 'param','wheeltec_params')
     param_file = LaunchConfiguration('params', default=os.path.join(
-        param_dir, 'param_mini_mec.yaml'))
+        param_dir, 'param_top_omni.yaml'))
 
 
     return LaunchDescription([
