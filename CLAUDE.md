@@ -4,225 +4,84 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a ROS2 Humble Hawksbill workspace for Wheeltec robotics platforms. It contains a complete robotics software stack including hardware drivers, SLAM, navigation, vision, and AI components for commercial educational/research robots.
+Wheeltec ROS2 mobile robot platform running on ROS2 Humble. Supports 30+ robot model variants (omni-wheel, mecanum, 4WD, differential, tank) with configurable sensor suites (LiDAR, depth cameras, ToF, IMU, ultrasonic, microphone). Currently configured as **top_omni** with **ls_N10Plus_uart** LiDAR and **H30** IMU.
 
-## Build System
-
-**Build Tool:** `colcon` (ROS2's standard build tool)
+## Build & Run Commands
 
 ```bash
 # Build entire workspace
-colcon build
+cd ~/wheeltec_ros2 && colcon build
 
-# Build with symlink install (recommended for development - launch file changes don't require rebuild)
-colcon build --symlink-install
+# Build a single package
+colcon build --packages-select <package_name>
 
-# Build specific package
-colcon build --packages-select turn_on_wheeltec_robot [--symlink-install]
+# Build with dependencies
+colcon build --packages-up-to <package_name>
 
-# Build with limited parallel workers (useful for memory-constrained systems)
-colcon build --parallel-workers 2 [--symlink-install]
+# Source workspace after building
+source install/setup.bash
 
-# Clean build artifacts
-rm -rf build/ install/ log/
-```
-
-**Package Types:**
-- C++ packages use `ament_cmake`
-- Python packages use `ament_python` with setuptools
-
-## Testing
-
-```bash
-# Test entire workspace
-colcon test
-
-# Test specific package
-colcon test --packages-select turn_on_wheeltec_robot
-
-# View test results
-colcon test-result --verbose
-```
-
-**Python Tests:** Each Python package typically has these test files:
-- `test_copyright.py` - License header checking (ament_copyright)
-- `test_flake8.py` - Python style checking (ament_flake8)
-- `test_pep257.py` - Docstring checking (ament_pep257)
-
-## Key Launch Commands
-
-**Core Robot:**
-```bash
-# Start robot base (main command)
+# Launch the robot base
 ros2 launch turn_on_wheeltec_robot turn_on_wheeltec_robot.launch.py
 
-# Start sensors (lidar + camera)
-ros2 launch turn_on_wheeltec_robot wheeltec_sensors.launch.py
-
-# Keyboard control
-ros2 run wheeltec_robot_keyboard wheeltec_keyboard
-```
-
-**SLAM (3 options):**
-```bash
-# Gmapping
-ros2 launch slam_gmapping slam_gmapping.launch.py
-
-# SLAM Toolbox
-ros2 launch wheeltec_slam_toolbox online_async_launch.py
-
-# Cartographer
-ros2 launch wheeltec_cartographer cartographer.launch.py
+# Launch navigation (includes robot base + lidar + nav2)
+ros2 launch wheeltec_robot_nav2 wheeltec_nav2.launch.py
 
 # Save map
-ros2 launch wheeltec_nav2 save_map.launch.py
-```
-
-**Navigation:**
-```bash
-ros2 launch wheeltec_nav2 wheeltec_nav2.launch.py
+ros2 launch wheeltec_robot_nav2 save_map.launch.py
 ```
 
 ## Architecture
 
-### Hardware Abstraction Layer
+### Package Organization (`src/`)
 
-**`turn_on_wheeltec_robot`** - Main robot control node (`src/wheeltec_robot.cpp`)
-- Communicates with STM32 microcontroller via serial port (`/dev/ttyUSB0`)
-- Protocol: Custom binary protocol with BCC checksum (FRAME_HEADER=0x7B, FRAME_TAIL=0x7D)
-- Publishes: odometry, IMU (MPU6050/H30), battery voltage, ultrasonic sensors
-- Subscribes: cmd_vel (Twist messages)
-- Supports multiple robot kinematics: differential drive, Ackermann, Mecanum, Omni, 4WD
+**Core robot control:**
+- `turn_on_wheeltec_robot` — Main robot node: serial comms with base, publishes odom/IMU/ultrasonic, light strip control, charging. Entry point for most launch sequences.
+- `wheeltec_robot_msg` — Custom messages: `Data.msg` (3D vector), `Supersonic.msg` (8-channel ultrasonic)
 
-**Key Data Structures:**
-- `RECEIVE_DATA` (24 bytes): Speed, voltage, IMU data from STM32
-- `SEND_DATA` (11 bytes): Velocity commands to STM32
-- `DISTANCE_DATA` (19 bytes): 8 ultrasonic sensor readings
+**Navigation stack:**
+- `wheeltec_robot_nav2` — Nav2 configuration, launch files, maps, per-robot-type parameter files in `param/wheeltec_params/param_*.yaml`
+- `navigation2-humble` — Modified Nav2 stack (local fork)
+- `nav2_waypoint_cycle` — Cyclic waypoint navigation (Python)
+- `wheeltec_path_follow` — Path recording and following
 
-### Sensor Drivers
+**Sensor drivers:**
+- `wheeltec_lidar_ros2` — Meta-package for multiple LiDAR drivers (rplidar, lslidar, ldlidar)
+- `wheeltec_tof` — VL53L1X Time-of-Flight sensor array (Python)
+- `usb_cam-ros2` — USB camera driver
+- `ros2_astra_camera-master` — Depth camera driver
+- `yesense_ros2` — H30 IMU driver
+- `wheeltec_mic` — Microphone array for radar tracking
 
-- **`wheeltec_lidar_ros2/`** - LiDAR drivers (RPLidar, LD LiDAR, LS LiDAR)
-- **`ros2_astra_camera-master/`** - Astra depth camera (Orbbec)
-- **`yesense_ros2/`** - IMU driver (H30 model)
-- **`usb_cam-ros2/`** - USB camera driver
-- **`wheeltec_gps/`** - UBlox GPS driver
-- **`wheeltec_tof/`** - VL53L1X TOF传感器阵列驱动 (支持8个传感器通过TCA9548A I2C扩展板)
+**Vision/tracking:**
+- `aruco_ros-humble-devel` — ArUco marker detection
+- `wheeltec_robot_kcf` — KCF object tracking
+- `simple_follower_ros2` — Object following (Python)
 
-### SLAM Stack
+**Voice/AI:**
+- `wheeltec_aiui` — iFlytek voice recognition
+- `tts_make_ros2` — Text-to-speech
+- `ollama_ros_chat` — LLM chat integration (Python)
 
-- **`wheeltec_robot_slam/`** - Contains three SLAM implementations:
-  - `openslam_gmapping/` - Gmapping ROS2 port
-  - `wheeltec_slam_toolbox/` - SLAM Toolbox wrapper
-  - `wheeltec_cartographer/` - Google Cartographer wrapper
-  - `orb_slam_2_ros-ros2/` - ORB-SLAM2 visual SLAM
+**Robot description:**
+- `wheeltec_robot_urdf` — URDF/Xacro models for all robot variants
 
-### Navigation Stack
+### Configuration Flow
 
-- **`navigation2-humble/`** - Full Nav2 stack (custom build)
-- **`wheeltec_robot_nav2/`** - Wheeltec-specific Nav2 configurations
-- **`wheeltec_path_follow/`** - Path recording and playback
+1. `turn_on_wheeltec_robot/config/wheeltec_param.yaml` — Master config: selects car mode, lidar type, IMU type, camera type
+2. `turn_on_wheeltec_robot/config/robot_model.yaml` — TF offsets for 30+ robot models (base→laser, base→camera, etc.)
+3. `turn_on_wheeltec_robot/config/ekf.yaml` — EKF sensor fusion config (odom + IMU, 2D mode, 5Hz)
+4. `wheeltec_robot_nav2/param/wheeltec_params/param_<model>.yaml` — Nav2 parameters per robot type (AMCL, controllers, planners, costmaps)
+5. `wheeltec_robot_nav2/config/omni_nav_bt.xml` — Custom behavior tree for omni navigation
 
-### AI/Vision Features
+### Launch Chain
 
-- **`simple_follower_ros2/`** - Laser follower, line follower, visual follower
-- **`wheeltec_robot_kcf/`** - KCF tracker
-- **`wheeltec_bodyreader/`** - Skeleton detection and pose control
-- **`aruco_ros-humble-devel/`** - AR tag detection
-- **`wheeltec_robot_rtab/`** - RTAB-Map visual SLAM
+`wheeltec_nav2.launch.py` → includes `turn_on_wheeltec_robot.launch.py` (base + EKF + URDF) + lidar driver + `nav2_bringup`
 
-### Voice/Interaction
+`turn_on_wheeltec_robot.launch.py` → includes `base_serial.launch.py` (selects STM32 vs H30 IMU) + `wheeltec_ekf.launch.py` + `robot_mode_description.launch.py`
 
-- **`wheeltec_mic/`** - Microphone array
-- **`wheeltec_aiui/`** - AI UI with Deepseek integration
-- **`tts_make_ros2/`** - Text-to-speech
+### Languages
 
-### Communication
-
-- **`wheeltec_robot_msg/`** - Custom message types
-- **`wheeltec_rrt_msg/`** - RRT exploration messages
-- **`depend/serial_ros2/`** - Serial library dependency
-- **`depend/ackermann_msgs-ros2/`** - Ackermann steering messages
-
-## Configuration
-
-**Robot Model Selection:** Configured via launch parameters in `turn_on_wheeltec_robot.launch.py`. Supported models include:
-- Differential: mini_mec, senior_mec, flagship_mec, S100, S200, S300
-- Ackermann: mini_akm, senior_akm, flagship_akm, V550, V650
-- Omni: mini_omni, senior_omni
-- 4WD: mini_tank, senior_tank
-
-**Odometry Calibration:** Parameters in `wheeltec_robot.cpp`:
-- `odom_x_scale`, `odom_y_scale` - Linear correction
-- `odom_z_scale_positive`, `odom_z_scale_negative` - Angular correction
-
-**IMU Configuration:**
-- GYROSCOPE_RATIO = 0.00026644 (rad conversion)
-- ACCEl_RATIO = 1671.84 (m/s² conversion)
-
-**TOF传感器配置:**
-- 使用VL53L1X传感器，通过TCA9548A I2C扩展板连接最多8个传感器
-- 测距范围：最大4米
-- 用途：障碍物检测、边缘检测
-
-## Dependencies
-
-Install all ROS dependencies:
-```bash
-rosdep install --from-paths src --ignore-src -r -y
-```
-
-Key external dependencies:
-- ROS2 Humble base
-- `serial` library (in `depend/serial_ros2/`)
-- OpenCV (for vision packages)
-- PCL (for point cloud processing)
-
-## Code Style
-
-**注释规范:**
-- 所有注释使用中文编写
-- 代码提交信息(commit message)使用中文描述
-
-**C++:**
-- Google style-based (see `ros2_astra_camera-master/.clang-format`)
-- 100 column limit
-- 2-space indentation
-- Compiler flags: `-Wall -Wextra -Wpedantic`
-
-**Python:**
-- ament_flake8 for linting
-- ament_pep257 for docstrings
-
-## Common Development Tasks
-
-**View TF tree:**
-```bash
-ros2 run tf2_tools view_frames
-```
-
-**View topics:**
-```bash
-rqt_graph
-```
-
-**View camera feed:**
-```bash
-rqt_image_view
-```
-
-**SSH to robot:**
-```bash
-ssh -Y wheeltec@192.168.0.100
-```
-
-**NFS mount (for development):**
-```bash
-sudo mount -t nfs 192.168.0.100:/home/wheeltec/wheeltec_ros2 /mnt
-```
-
-## File Locations
-
-- Launch files: `src/<package>/launch/`
-- Config files: `src/<package>/config/`
-- URDF models: `src/wheeltec_robot_urdf/`
-- Maps: `src/wheeltec_robot_nav2/map/`
+- **C++ (C++14):** Core robot control, navigation, hardware drivers, tracking
+- **Python 3:** ToF sensors, keyboard teleop, auto-recharge, waypoint cycling, follower, LLM chat
+- Build system: `ament_cmake` for C++, `ament_python` for Python packages
