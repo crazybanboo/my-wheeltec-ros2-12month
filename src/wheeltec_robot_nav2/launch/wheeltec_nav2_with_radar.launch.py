@@ -16,6 +16,9 @@ def generate_launch_description():
 
     wheeltec_robot_dir = get_package_share_directory('turn_on_wheeltec_robot')
     wheeltec_launch_dir = os.path.join(wheeltec_robot_dir, 'launch')
+
+    radar_dir = get_package_share_directory('wheeltec_radar')
+    radar_launch_dir = os.path.join(radar_dir, 'launch')
         
     wheeltec_nav_dir = get_package_share_directory('wheeltec_nav2')
     wheeltec_nav_launchr = os.path.join(wheeltec_nav_dir, 'launch')
@@ -49,18 +52,12 @@ def generate_launch_description():
         ),
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource(
-                [wheeltec_launch_dir, '/imu_processor.launch.py']),
-        ),
-        IncludeLaunchDescription(
-            PythonLaunchDescriptionSource(
                 [wheeltec_launch_dir, '/turn_on_wheeltec_robot.launch.py']),
-            launch_arguments={'carto_slam': 'false','robot_nav':'false'}.items(),
         ),
-        IncludeLaunchDescription(
+       IncludeLaunchDescription(
             PythonLaunchDescriptionSource(
                 [wheeltec_launch_dir, '/wheeltec_lidar.launch.py']),
-        ),  
-        
+        ),        
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource(
                 [wheeltec_nav_launchr, '/bringup_launch.py']),
@@ -68,6 +65,15 @@ def generate_launch_description():
                 'map': map_file,
                 'use_sim_time': use_sim_time,
                 'params_file': param_file}.items(),
+        ),
+        IncludeLaunchDescription(
+            PythonLaunchDescriptionSource(
+                [radar_launch_dir, '/wheeltec_radar.launch.py']),
+        ),
+        Node(
+            name='transform_scan',
+            package='wheeltec_radar',
+            executable='transform_scan.py',
         ),
 
     ])

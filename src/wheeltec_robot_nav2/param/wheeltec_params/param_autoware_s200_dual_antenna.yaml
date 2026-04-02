@@ -101,7 +101,7 @@ controller_server:
 
     goal_checker:
       plugin: "nav2_controller::SimpleGoalChecker"
-      xy_goal_tolerance: 0.15
+      xy_goal_tolerance: 0.25
       yaw_goal_tolerance: 0.25
       stateful: True
 
@@ -217,7 +217,7 @@ local_costmap:
       height: 3            #代价地图的高度（m）
       resolution: 0.05     #代价地图1像素的分辨率，以米为单位
       #robot_radius: 0.20   #机器人半径，如果未提供足迹坐标，则使用机器人半径。
-      footprint: "[[-0.55, -0.3280], [-0.55, 0.3280], [0.144, 0.3280], [0.144, -0.3280]]"
+      footprint: "[[-0.3470, -0.3280], [-0.3470, 0.3280], [0.3470, 0.3280], [0.3470, -0.3280]]"
       plugins: ["voxel_layer","inflation_layer"] #插件包括:{“体素层”，“膨胀层”}
       inflation_layer:                             #膨胀层参数
         plugin: "nav2_costmap_2d::InflationLayer"  #膨胀层插件。
@@ -261,7 +261,7 @@ global_costmap:
       robot_base_frame: base_footprint  #机器人底座框架
       use_sim_time: False               #仿真时间 
       #robot_radius: 0.20                #机器人半径
-      footprint: "[[-0.55, -0.3280], [-0.55, 0.3280], [0.144, 0.3280], [0.144, -0.3280]]"
+      footprint: "[[-0.3470, -0.3280], [-0.3470, 0.3280], [0.3470, 0.3280], [0.3470, -0.3280]]"
       resolution: 0.05                  #全局地图1像素的分辨率，以米为单位
       track_unknown_space: true
       plugins: ["static_layer", "obstacle_layer", "inflation_layer"] #插件包括：{“静态层”，“障碍层”，“膨胀层”}
@@ -309,7 +309,7 @@ map_saver:
 
 planner_server: #规划器服务器参数
   ros__parameters:
-    expected_planner_frequency: 2.0     #预期的规划器频率。如果当前频率小于预期频率，则显示警告消息。
+    expected_planner_frequency: 1.0     #预期的规划器频率。如果当前频率小于预期频率，则显示警告消息。
     use_sim_time: False
     planner_plugins: ["GridBased"] #规划器插件类型，需要与BT Tree文件匹配
     GridBased:

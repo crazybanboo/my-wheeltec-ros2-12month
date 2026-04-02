@@ -13,10 +13,6 @@ def load_yaml(file_path: Path) -> dict:
 
 def generate_launch_description():
     use_sim_time = LaunchConfiguration('use_sim_time', default='false')
-
-    wheeltec_robot_dir = get_package_share_directory('turn_on_wheeltec_robot')
-    wheeltec_launch_dir = os.path.join(wheeltec_robot_dir, 'launch')
-        
     wheeltec_nav_dir = get_package_share_directory('wheeltec_nav2')
     wheeltec_nav_launchr = os.path.join(wheeltec_nav_dir, 'launch')
     cfg_params = load_yaml(os.path.join(get_package_share_directory('turn_on_wheeltec_robot'),'config','wheeltec_param.yaml'))
@@ -47,20 +43,6 @@ def generate_launch_description():
             package='nav2_waypoint_cycle',
             executable='nav2_waypoint_cycle',
         ),
-        IncludeLaunchDescription(
-            PythonLaunchDescriptionSource(
-                [wheeltec_launch_dir, '/imu_processor.launch.py']),
-        ),
-        IncludeLaunchDescription(
-            PythonLaunchDescriptionSource(
-                [wheeltec_launch_dir, '/turn_on_wheeltec_robot.launch.py']),
-            launch_arguments={'carto_slam': 'false','robot_nav':'false'}.items(),
-        ),
-        IncludeLaunchDescription(
-            PythonLaunchDescriptionSource(
-                [wheeltec_launch_dir, '/wheeltec_lidar.launch.py']),
-        ),  
-        
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource(
                 [wheeltec_nav_launchr, '/bringup_launch.py']),

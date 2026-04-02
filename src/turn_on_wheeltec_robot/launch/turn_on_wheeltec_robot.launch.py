@@ -19,17 +19,21 @@ def generate_launch_description():
     bringup_dir = get_package_share_directory('turn_on_wheeltec_robot')
     launch_dir = os.path.join(bringup_dir, 'launch')
 
-    carto_slam = LaunchConfiguration('carto_slam', default='false')
-    carto_slam_dec = DeclareLaunchArgument('carto_slam',default_value='false')
+    carto_slam = LaunchConfiguration('carto_slam', default='False')
+    carto_slam_dec = DeclareLaunchArgument('carto_slam',default_value='False')
+
+    robot_nav = LaunchConfiguration('robot_nav', default='False')
+    robot_nav_dec = DeclareLaunchArgument('robot_nav',default_value='False')
+ 
+    imu_config = Path(get_package_share_directory('turn_on_wheeltec_robot'), 'config', 'imu.yaml')
                     
     wheeltec_robot = IncludeLaunchDescription(
             PythonLaunchDescriptionSource(os.path.join(launch_dir, 'base_serial.launch.py')),
     )
-     
-     
+
     robot_ekf = IncludeLaunchDescription(
             PythonLaunchDescriptionSource(os.path.join(launch_dir, 'wheeltec_ekf.launch.py')),
-            launch_arguments={'carto_slam':carto_slam}.items(),            
+            launch_arguments={'carto_slam': carto_slam,'robot_nav':robot_nav}.items(),            
     )                                                       
                            
     joint_state_publisher_node = launch_ros.actions.Node(
@@ -38,12 +42,14 @@ def generate_launch_description():
             name='joint_state_publisher',
     )
     
+
     car_mode_type = IncludeLaunchDescription(
             PythonLaunchDescriptionSource(os.path.join(launch_dir, 'robot_mode_description.launch.py')),
     )
 
     ld = LaunchDescription()
     ld.add_action(carto_slam_dec)
+    ld.add_action(robot_nav_dec)
     ld.add_action(wheeltec_robot)
     ld.add_action(joint_state_publisher_node)
     ld.add_action(robot_ekf)

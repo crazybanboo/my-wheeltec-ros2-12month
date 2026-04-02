@@ -90,15 +90,15 @@ def include_lidar_launch(context, *args, **kwargs):
                                     output='screen'
                                     )
         
-    elif lidar_type == 'ld14':
+    elif lidar_type == 'ldstl19p':
         lidar_launch = IncludeLaunchDescription(
-            PythonLaunchDescriptionSource(os.path.join(get_package_share_directory('ldlidar_sl_ros2'), 'launch','ld14.launch.py')),)
-    elif lidar_type == 'ld06':
+            PythonLaunchDescriptionSource(os.path.join(get_package_share_directory('ldlidar'), 'launch','stl19p.launch.py')),)
+    elif lidar_type == 'ldstl06nbj':
         lidar_launch = IncludeLaunchDescription(
-            PythonLaunchDescriptionSource(os.path.join(get_package_share_directory('ldlidar_stl_ros2'), 'launch','ld06.launch.py')),)
-    elif lidar_type == 'ldstl06n':
+            PythonLaunchDescriptionSource(os.path.join(get_package_share_directory('ldlidar'), 'launch','stl06nbj.launch.py')),)
+    elif lidar_type == 'ldstl19n':
         lidar_launch = IncludeLaunchDescription(
-            PythonLaunchDescriptionSource(os.path.join(get_package_share_directory('ldlidar'), 'launch', 'stl06n.launch.py')),)
+            PythonLaunchDescriptionSource(os.path.join(get_package_share_directory('ldlidar'), 'launch', 'stl19n.launch.py')),)
     elif lidar_type == 'rplidar_c1':
         lidar_launch = IncludeLaunchDescription(
             PythonLaunchDescriptionSource(os.path.join(get_package_share_directory('rplidar_ros'), 'launch', 'rplidar_c1_launch.py')),)

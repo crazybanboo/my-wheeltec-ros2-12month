@@ -83,7 +83,7 @@ using namespace std;
 //加速度计原始数据转换位m/s^2单位，32768/2g=32768/19.6=1671.84
 #define ACCEl_RATIO 	  1671.84f  	
 
-extern sensor_msgs::msg::Imu Mpu6050;  //External variables, IMU topic data //外部变量，IMU话题数据
+//extern sensor_msgs::msg::Imu Mpu6050;  //External variables, IMU topic data //外部变量，IMU话题数据
 
 //Covariance matrix for speedometer topic data for robt_pose_ekf feature pack
 //协方差矩阵，用于里程计话题数据，用于robt_pose_ekf功能包
@@ -271,7 +271,8 @@ class turn_on_robot : public rclcpp::Node
 
 		string car_mode;
         string usart_port_name, robot_frame_id, gyro_frame_id, odom_frame_id; //Define the related variables //定义相关变量
-		bool ranger_avoid_flag;
+		string cmd_vel;
+		bool ranger_avoid_flag,ultrasonic_avoid;
         int serial_baud_rate;      //Serial communication baud rate //串口通信波特率
         RECEIVE_DATA Receive_Data; //The serial port receives the data structure //串口接收数据结构体
         SEND_DATA Send_Data;       //The serial port sends the data structure //串口发送数据结构体
@@ -288,11 +289,5 @@ class turn_on_robot : public rclcpp::Node
         float Charging_Current=0;  //Charging_Current //充电电流
         uint8_t Red=0;                //Whether the robot finds the marker bit of infrared signal (charging pile)  //机器人是否寻找到红外信号(充电桩)的标志位 
         float odom_x_scale,odom_y_scale,odom_z_scale_positive,odom_z_scale_negative; //Odometer correction parameters //里程计修正参数
-        //IMU静态零偏校准相关变量
-        bool is_calibrating;
-        float gyro_bias_x, gyro_bias_y, gyro_bias_z;
-        float cal_sum_x, cal_sum_y, cal_sum_z;
-        int cal_count;
-        float cal_sampling_time;
 };
 #endif

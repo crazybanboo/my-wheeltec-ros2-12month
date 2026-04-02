@@ -78,6 +78,14 @@ def spawn_robot_nodes(context, *args, **kwargs):
             name='base_to_gyro',
             arguments=[*map(str, model_cfg['base_to_gyro']), 'base_footprint', 'gyro_link'],
         ),
+
+        # base → radar
+        Node(
+            package='tf2_ros',
+            executable='static_transform_publisher',
+            name='base_to_radar',
+            arguments=[*map(str, model_cfg['base_to_radar']), 'base_footprint', 'radar'],
+        ),
     ]
     
     return actions

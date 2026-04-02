@@ -1,5 +1,5 @@
 ### ekf config file ###
-ekf_filter_node:
+nav_ekf_filter_node:
     ros__parameters:
         # -------------------------------
         # 通用滤波器配置
@@ -61,7 +61,7 @@ ekf_filter_node:
         # -------------------------------
         # 传感器输入：IMU
         # -------------------------------
-        imu0:  /imu/data_raw  #  /imu/data_raw    #/imu/data_filtered
+        imu0:  /imu/data_filtered  #  /imu/data_raw   
         imu0_config: [false, false, false,
                       false, false, true,
                       false, false, false,

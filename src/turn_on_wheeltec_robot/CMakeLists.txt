@@ -32,7 +32,7 @@ find_package(tf2 REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(std_srvs REQUIRED)
 find_package(std_msgs REQUIRED)
-find_package(wheeltec_robot_msg REQUIRED)                         # CHANGE
+find_package(wheeltec_robot_msg REQUIRED)                         
 find_package(serial REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
 # uncomment the following section in order to fill in
@@ -58,17 +58,16 @@ endif()
 include_directories(
   include
 )
-set(wheeltec_robot_node_SRCS
-  src/wheeltec_robot.cpp
-  src/Quaternion_Solution.cpp
-)
+
 
 add_executable(wheeltec_robot_node src/wheeltec_robot.cpp src/Quaternion_Solution.cpp)
 ament_target_dependencies(wheeltec_robot_node tf2_ros tf2 tf2_geometry_msgs rclcpp std_msgs nav_msgs std_srvs sensor_msgs serial wheeltec_robot_msg turtlesim)
 
-install(TARGETS
-wheeltec_robot_node
+add_executable(ImuProcessor src/ImuProcessor.cpp src/Quaternion_Solution.cpp)
+ament_target_dependencies(ImuProcessor tf2_ros tf2 tf2_geometry_msgs rclcpp std_msgs nav_msgs std_srvs sensor_msgs serial wheeltec_robot_msg turtlesim)
 
+install(TARGETS
+wheeltec_robot_node ImuProcessor
 DESTINATION lib/${PROJECT_NAME}
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
@@ -76,7 +75,8 @@ DESTINATION lib/${PROJECT_NAME}
 )
 
 install(
-  DIRECTORY launch config
+  DIRECTORY launch config 
   DESTINATION share/${PROJECT_NAME}
-)
+) 
+
 ament_package()

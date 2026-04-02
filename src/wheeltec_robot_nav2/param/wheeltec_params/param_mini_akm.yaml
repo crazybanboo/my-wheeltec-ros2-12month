@@ -114,7 +114,7 @@ controller_server:
       batch_size: 2000  #在给定迭代中从当前最佳控制序列中随机采样的候选轨迹的数量
       vx_std: 0.2       #Vx 的抽样标准差
       vy_std: 0.0       #Vy 的抽样标准差
-      wz_std: 0.4       #Wz（角速度）的抽样标准差
+      wz_std: 0.2       #Wz（角速度）的抽样标准差
       vx_max: 0.35       #目标最大前进速度（米/秒）
       vx_min: -0.35      #目标最大反向速度（米/秒）
       vy_max: 0.0       #如果使用Omni运动模型，目标最大横向速度（m/s）
@@ -218,7 +218,7 @@ local_costmap:
       height: 3            #代价地图的高度（m）
       resolution: 0.05     #代价地图1像素的分辨率，以米为单位
       #robot_radius: 0.20   #机器人半径，如果未提供足迹坐标，则使用机器人半径。
-      footprint: "[ [-0.03, -0.0900], [-0.03, 0.0900], [0.2, 0.0900], [0.2, -0.0900] ]"
+      footprint: "[ [-0.031, -0.093], [-0.031, 0.093], [0.209, 0.093], [0.209, -0.093] ]"
       plugins: ["voxel_layer","inflation_layer"] #插件包括:{“体素层”，“膨胀层”}
       inflation_layer:                             #膨胀层参数
         plugin: "nav2_costmap_2d::InflationLayer"  #膨胀层插件。
@@ -233,9 +233,19 @@ local_costmap:
         z_voxels: 16                               #体素地图的Z轴体素数量
         max_obstacle_height: 2.0                   #可检测障碍物的最大高度（米）
         mark_threshold: 0                          #标记体素的阈值
-        observation_sources: scan                  #观测源
+        observation_sources: scan scan2                 #观测源
         scan:
           topic: /scan
+          max_obstacle_height: 2.0                  #可检测障碍物的最大高度（米）
+          clearing: True                            #是否启用障碍物清除功能
+          marking: True                             #是否启用障碍物标记功能
+          data_type: "LaserScan"                    #数据类型
+          raytrace_max_range: 10.0                  #控制光线追踪从代价地图中清除障碍物的最大范围 
+          raytrace_min_range: 0.0                  #控制光线追踪从代价地图中清除障碍物的最大范围 
+          obstacle_max_range: 2.5                   #控制代价地图上标记障碍物的最大范围
+          obstacle_min_range: 0.0                   #控制代价地图上标记障碍物的最小范围
+        scan2:
+          topic: /scan2
           max_obstacle_height: 2.0                  #可检测障碍物的最大高度（米）
           clearing: True                            #是否启用障碍物清除功能
           marking: True                             #是否启用障碍物标记功能
@@ -262,16 +272,26 @@ global_costmap:
       robot_base_frame: base_footprint  #机器人底座框架
       use_sim_time: False               #仿真时间 
       #robot_radius: 0.20                #机器人半径
-      footprint: "[ [-0.03, -0.0900], [-0.03, 0.0900], [0.2, 0.0900], [0.2, -0.0900] ]"
+      footprint: "[ [-0.031, -0.0900], [-0.031, 0.0900], [0.209, 0.0900], [0.209, -0.0900] ]"
       resolution: 0.05                  #全局地图1像素的分辨率，以米为单位
       track_unknown_space: true
       plugins: ["static_layer", "obstacle_layer", "inflation_layer"] #插件包括：{“静态层”，“障碍层”，“膨胀层”}
       obstacle_layer:  #障碍层参数
         plugin: "nav2_costmap_2d::ObstacleLayer" #障碍层插件
         enabled: True
-        observation_sources: scan                  #观测源
+        observation_sources: scan scan2                 #观测源
         scan:
           topic: /scan
+          max_obstacle_height: 2.0                 #可检测障碍物的最大高度（米）
+          clearing: True                           #是否启用障碍物清除功能
+          marking: True                            #是否启用障碍物标记功能
+          data_type: "LaserScan"                   #数据类型
+          raytrace_max_range: 10.0                 #控制光线追踪从代价地图中清除障碍物的最大范围 
+          raytrace_min_range: 0.0                  #控制光线追踪从代价地图中清除障碍物的最大范围 
+          obstacle_max_range: 2.5                  #控制代价地图上标记障碍物的最大范围
+          obstacle_min_range: 0.0                  #控制代价地图上标记障碍物的最小范围
+        scan2:
+          topic: /scan2
           max_obstacle_height: 2.0                 #可检测障碍物的最大高度（米）
           clearing: True                           #是否启用障碍物清除功能
           marking: True                            #是否启用障碍物标记功能
@@ -310,7 +330,7 @@ map_saver:
 
 planner_server: #规划器服务器参数
   ros__parameters:
-    expected_planner_frequency: 2.0     #预期的规划器频率。如果当前频率小于预期频率，则显示警告消息。
+    expected_planner_frequency: 1.0     #预期的规划器频率。如果当前频率小于预期频率，则显示警告消息。
     use_sim_time: False
     planner_plugins: ["GridBased"] #规划器插件类型，需要与BT Tree文件匹配
     GridBased:

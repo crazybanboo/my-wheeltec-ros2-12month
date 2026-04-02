@@ -40,7 +40,8 @@ def spawn_camera_nodes(context, *args, **kwargs):
 
     if camera_mode_.startswith('astra')or camera_mode_.startswith('dabai')or camera_mode_.startswith('gemini'):
         camera_launch = IncludeLaunchDescription(
-	    AnyLaunchDescriptionSource(os.path.join(astra_launch_dir,file_name)),)
+	    AnyLaunchDescriptionSource(os.path.join(astra_launch_dir,file_name)),
+	launch_arguments=[('enable_d2c_viewer', 'True')])
     elif camera_mode_.startswith('usb'):
         camera_launch =IncludeLaunchDescription(
 	    PythonLaunchDescriptionSource(os.path.join(usbcam_launch_dir,'demo.launch.py')),

@@ -217,12 +217,12 @@ local_costmap:
       height: 3            #代价地图的高度（m）
       resolution: 0.05     #代价地图1像素的分辨率，以米为单位
       #robot_radius: 0.20   #机器人半径，如果未提供足迹坐标，则使用机器人半径。
-      footprint: "[ [-0.03, -0.0900], [-0.03, 0.0900], [0.2, 0.0900], [0.2, -0.0900] ]"
+      footprint: "[ [-0.07, -0.19], [-0.07, 0.19],[0.35,0.19],[0.35, -0.19] ]"
       plugins: ["voxel_layer","inflation_layer"] #插件包括:{“体素层”，“膨胀层”}
       inflation_layer:                             #膨胀层参数
         plugin: "nav2_costmap_2d::InflationLayer"  #膨胀层插件。
         cost_scaling_factor: 3.0                   #成本缩放因子，决定障碍物成本随距离的递减速度。
-        inflation_radius: 0.1                     #膨胀半径
+        inflation_radius: 0.3                     #膨胀半径
       voxel_layer:
         plugin: "nav2_costmap_2d::VoxelLayer"      #体素层插件。
         enabled: True
@@ -271,7 +271,7 @@ global_costmap:
       robot_base_frame: base_footprint  #机器人底座框架
       use_sim_time: False               #仿真时间 
       #robot_radius: 0.20                #机器人半径
-      footprint: "[ [-0.03, -0.0900], [-0.03, 0.0900], [0.2, 0.0900], [0.2, -0.0900] ]"
+      footprint: "[ [-0.07, -0.19], [-0.07, 0.19],[0.35,0.19],[0.35, -0.19] ]"
       resolution: 0.05                  #全局地图1像素的分辨率，以米为单位
       track_unknown_space: true
       plugins: ["static_layer", "obstacle_layer", "inflation_layer"] #插件包括：{“静态层”，“障碍层”，“膨胀层”}
@@ -304,8 +304,8 @@ global_costmap:
         map_subscribe_transient_local: True
       inflation_layer: #膨胀层参数
         plugin: "nav2_costmap_2d::InflationLayer"  #膨胀层插件
-        cost_scaling_factor: 10.0                   #成本缩放因子，决定障碍物成本随距离的递减速度。
-        inflation_radius: 0.25                     #膨胀半径
+        cost_scaling_factor: 3.0                   #成本缩放因子，决定障碍物成本随距离的递减速度。
+        inflation_radius: 0.3                     #膨胀半径
       always_send_full_costmap: True               #是否每次更新时都发送完整的成本图，而不是更新
   global_costmap_client:
     ros__parameters:

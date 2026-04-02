@@ -2,7 +2,7 @@
 #include "turn_on_wheeltec_robot/Quaternion_Solution.h"
 #include "wheeltec_robot_msg/msg/data.hpp" 
 
-sensor_msgs::msg::Imu Mpu6050;//Instantiate an IMU object //实例化IMU对象 
+//sensor_msgs::msg::Imu Mpu6050;//Instantiate an IMU object //实例化IMU对象 
 
 using std::placeholders::_1;
 using namespace std;
@@ -292,13 +292,13 @@ void turn_on_robot::Publish_ImuSensor()
   Imu_Data_Pub.orientation.w = Mpu6050.orientation.w;
   Imu_Data_Pub.orientation_covariance[0] = 1e6; //Three-axis attitude covariance matrix //三轴姿态协方差矩阵
   Imu_Data_Pub.orientation_covariance[4] = 1e6;
-  Imu_Data_Pub.orientation_covariance[8] = 1e-6;
+  Imu_Data_Pub.orientation_covariance[8] = 1e-6; //tues
   Imu_Data_Pub.angular_velocity.x = Mpu6050.angular_velocity.x; //Triaxial angular velocity //三轴角速度
   Imu_Data_Pub.angular_velocity.y = Mpu6050.angular_velocity.y;
   Imu_Data_Pub.angular_velocity.z = Mpu6050.angular_velocity.z;
   Imu_Data_Pub.angular_velocity_covariance[0] = 1e6; //Triaxial angular velocity covariance matrix //三轴角速度协方差矩阵
   Imu_Data_Pub.angular_velocity_covariance[4] = 1e6;
-  Imu_Data_Pub.angular_velocity_covariance[8] = 1e-6;
+  Imu_Data_Pub.angular_velocity_covariance[8] = 1e-6; //tues
   Imu_Data_Pub.linear_acceleration.x = Mpu6050.linear_acceleration.x; //Triaxial acceleration //三轴线性加速度
   Imu_Data_Pub.linear_acceleration.y = Mpu6050.linear_acceleration.y; 
   Imu_Data_Pub.linear_acceleration.z = Mpu6050.linear_acceleration.z;  
@@ -843,31 +843,6 @@ void turn_on_robot::Control()
       Robot_Pos.Y+=(Robot_Vel.X * sin(Robot_Pos.Z) + Robot_Vel.Y * cos(Robot_Pos.Z)) * Sampling_Time; //Calculate the displacement in the Y direction, unit: m //计算Y方向的位移，单位：m
       Robot_Pos.Z+=Robot_Vel.Z * Sampling_Time; //The angular displacement about the Z axis, in rad //绕Z轴的角位移，单位：rad 
 
-      //IMU 静态零偏自校准逻辑
-      if (is_calibrating)
-      {
-        cal_sum_x += Mpu6050.angular_velocity.x;
-        cal_sum_y += Mpu6050.angular_velocity.y;
-        cal_sum_z += Mpu6050.angular_velocity.z;
-        cal_count++;
-        cal_sampling_time += Sampling_Time;
-
-        if (cal_sampling_time >= 3.0) // 采样3秒
-        {
-          gyro_bias_x = cal_sum_x / cal_count;
-          gyro_bias_y = cal_sum_y / cal_count;
-          gyro_bias_z = cal_sum_z / cal_count;
-          is_calibrating = false;
-          RCLCPP_INFO(this->get_logger(), "IMU Calibration Finished! Bias: x=%.6f, y=%.6f, z=%.6f", 
-                      gyro_bias_x, gyro_bias_y, gyro_bias_z);
-        }
-      }
-
-      // 应用零偏修正
-      Mpu6050.angular_velocity.x -= gyro_bias_x;
-      Mpu6050.angular_velocity.y -= gyro_bias_y;
-      Mpu6050.angular_velocity.z -= gyro_bias_z;
-
       //Calculate the three-axis attitude from the IMU with the angular velocity around the three-axis and the three-axis acceleration
       //通过IMU绕三轴角速度与三轴加速度计算三轴姿态
       Quaternion_Solution(Mpu6050.angular_velocity.x, Mpu6050.angular_velocity.y, Mpu6050.angular_velocity.z,\
@@ -927,19 +902,24 @@ turn_on_robot::turn_on_robot():rclcpp::Node ("wheeltec_robot")
   //The private_nh.param() entry parameter corresponds to the initial value of the name of the parameter variable on the parameter server
   //private_nh.param()入口参数分别对应：参数服务器上的名称  参数变量名  初始值
   
-  this->declare_parameter<int>("serial_baud_rate");
+  this->declare_parameter<int>("serial_baud_rate",114200);
   this->declare_parameter<bool>("ranger_avoid_flag",0);
+  this->declare_parameter<bool>("ultrasonic_avoid",0);
+
   this->declare_parameter<std::string>("usart_port_name", "/dev/wheeltec_controller");
   this->declare_parameter<std::string>("odom_frame_id", "odom");
   this->declare_parameter<std::string>("robot_frame_id", "base_footprint");
   this->declare_parameter<std::string>("gyro_frame_id", "gyro_link");
   this->declare_parameter<std::string>("car_mode", "mini_mec");
-  this->declare_parameter<double>("odom_x_scale");
-  this->declare_parameter<double>("odom_y_scale");
-  this->declare_parameter<double>("odom_z_scale_positive");
-  this->declare_parameter<double>("odom_z_scale_negative");
+  this->declare_parameter<double>("odom_x_scale",1.0);
+  this->declare_parameter<double>("odom_y_scale",1.0);
+  this->declare_parameter<double>("odom_z_scale_positive",1.0);
+  this->declare_parameter<double>("odom_z_scale_negative",1.0);
 
   this->get_parameter("ranger_avoid_flag", ranger_avoid_flag);
+  this->get_parameter("ultrasonic_avoid", ultrasonic_avoid);
+
+  
   this->get_parameter("serial_baud_rate", serial_baud_rate);//Communicate baud rate 115200 to the lower machine //和下位机通信波特率115200
   this->get_parameter("usart_port_name", usart_port_name);//Fixed serial port number //固定串口号
   this->get_parameter("odom_frame_id", odom_frame_id);//The odometer topic corresponds to the parent TF coordinate //里程计话题对应父TF坐标
@@ -950,13 +930,6 @@ turn_on_robot::turn_on_robot():rclcpp::Node ("wheeltec_robot")
   this->get_parameter("odom_y_scale", odom_y_scale);
   this->get_parameter("odom_z_scale_positive", odom_z_scale_positive);
   this->get_parameter("odom_z_scale_negative", odom_z_scale_negative);
-
-  //初始化IMU校准变量
-  is_calibrating = true;
-  gyro_bias_x = 0; gyro_bias_y = 0; gyro_bias_z = 0;
-  cal_sum_x = 0; cal_sum_y = 0; cal_sum_z = 0;
-  cal_count = 0;
-  cal_sampling_time = 0;
 
   //将car_mode转换为小写，便于后续判断车型模式
   std::transform(car_mode.begin(), car_mode.end(), car_mode.begin(),
@@ -991,8 +964,19 @@ turn_on_robot::turn_on_robot():rclcpp::Node ("wheeltec_robot")
   
   //Set the velocity control command callback function
   //速度控制命令订阅回调函数设置
+  if(ultrasonic_avoid == 1) 
+  {
+    cmd_vel="/cmd_vel_avoid";
+    RCLCPP_INFO(this->get_logger(),"wheeltec_robot use ultrasonic avoid");
+  }
+  else {
+    cmd_vel="/cmd_vel";
+    RCLCPP_INFO(this->get_logger(),"wheeltec_robot not use ultrasonic avoid");
+
+  }
+  
   Cmd_Vel_Sub = create_subscription<geometry_msgs::msg::Twist>(
-      "/cmd_vel", 2, std::bind(&turn_on_robot::Cmd_Vel_Callback, this, _1));
+      cmd_vel, 2, std::bind(&turn_on_robot::Cmd_Vel_Callback, this, _1));
 
   AvoidFlag_Sub = create_subscription<std_msgs::msg::Bool>(
       "RangerAvoidFlag", 10, std::bind(&turn_on_robot::RangerAvoidFlag_Callback, this, _1));
