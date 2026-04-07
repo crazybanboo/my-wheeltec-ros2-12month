@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Wheeltec ROS2 mobile robot platform running on ROS2 Humble. Supports 30+ robot model variants (omni-wheel, mecanum, 4WD, differential, tank) with configurable sensor suites (LiDAR, depth cameras, ToF, IMU, ultrasonic, microphone). Currently configured as **top_omni** with **ls_N10Plus_uart** LiDAR and **H30** IMU.
+Wheeltec ROS2 mobile robot platform running on ROS2 Humble. Supports 30+ robot model variants (omni-wheel, mecanum, 4WD, differential, tank) with configurable sensor suites (LiDAR, depth cameras, ToF, IMU, ultrasonic, microphone). Currently configured as **senior_diff** with **ls_N10Plus_uart** LiDAR and **H30** IMU.
 
 ## Build & Run Commands
 
@@ -70,9 +70,9 @@ ros2 launch wheeltec_robot_nav2 save_map.launch.py
 
 1. `turn_on_wheeltec_robot/config/wheeltec_param.yaml` — Master config: selects car mode, lidar type, IMU type, camera type
 2. `turn_on_wheeltec_robot/config/robot_model.yaml` — TF offsets for 30+ robot models (base→laser, base→camera, etc.)
-3. `turn_on_wheeltec_robot/config/ekf.yaml` — EKF sensor fusion config (odom + IMU, 2D mode, 5Hz)
+3. `turn_on_wheeltec_robot/config/ekf.yaml` — EKF sensor fusion config (odom + IMU, 2D mode, 10Hz)
 4. `wheeltec_robot_nav2/param/wheeltec_params/param_<model>.yaml` — Nav2 parameters per robot type (AMCL, controllers, planners, costmaps)
-5. `wheeltec_robot_nav2/config/omni_nav_bt.xml` — Custom behavior tree for omni navigation
+5. `wheeltec_robot_nav2/config/omni_nav_bt.xml` — Custom behavior tree for omni-wheel robots only (not used by current senior_diff configuration, which uses Nav2 default behavior trees)
 
 ### Launch Chain
 
@@ -85,3 +85,24 @@ ros2 launch wheeltec_robot_nav2 save_map.launch.py
 - **C++ (C++14):** Core robot control, navigation, hardware drivers, tracking
 - **Python 3:** ToF sensors, keyboard teleop, auto-recharge, waypoint cycling, follower, LLM chat
 - Build system: `ament_cmake` for C++, `ament_python` for Python packages
+
+## 项目文档 (PARA)
+
+项目使用 `docs/` 目录管理知识，按 PARA 方法组织：
+
+```
+docs/
+├── projects/    # 进行中的任务（有明确目标和终点）
+├── areas/       # 持续维护的经验知识（调参经验、硬件配置、测试流程）
+├── resources/   # 参考资料（外部链接、内部文件索引）
+└── archives/    # 已完成的项目文档
+```
+
+### 工作方式
+
+- **做硬件或调参相关改动前**，先读 `docs/areas/` 下的相关文档，了解历史经验和已知坑
+- **完成一个阶段性任务后**，做一次"收割"：
+  - 把通用经验提取到 `docs/areas/` 对应文档
+  - 把项目文档移到 `docs/archives/`
+- **涉及实车测试的改动**，参考 `docs/areas/hardware_setup.md` 的测试流程，列出测试步骤让用户在机器人上验证
+- **新建 project 文档时**，包含：目标、当前状态、已完成内容、已知问题、待办
