@@ -19,24 +19,24 @@ amcl:
     laser_min_range: -1.0           #要考虑的最小扫描范围，-1.0 将导致使用激光报告的最小范围
     laser_model_type: "likelihood_field" #使用哪种模型，
     #beam、likelihood_field 或 unlikely_field_prob。与 unlikely_field 相同，但如果启用，则包含 beamskip 功能
-    max_beams: 60                   #更新过滤器时每次扫描要使用多少个均匀分布的光束。
-    max_particles: 2000             #允许的最大粒子数
+    max_beams: 90                   #更新过滤器时每次扫描要使用多少个均匀分布的光束。
+    max_particles: 3000             #允许的最大粒子数
     min_particles: 500              #允许的最小粒子数
     odom_frame_id: "odom_combined"  #使用哪个框架进行里程计
     pf_err: 0.05                    #粒子过滤器群体误差
     pf_z: 0.99                      #粒子过滤器群体密度
-    recovery_alpha_fast: 0.0        #快速平均权重过滤器的指数衰减率，用于决定何时通过添加随机姿势进行恢复。
-    recovery_alpha_slow: 0.0        #慢速平均权重过滤器的指数衰减率，用于决定何时通过添加随机姿势进行恢复。
+    recovery_alpha_fast: 0.0        #快速平均权重过滤器的指数衰减率。注意：非0值会触发uniformPoseGenerator，在本地nav2 fork中存在SIGSEGV bug，必须保持0.0
+    recovery_alpha_slow: 0.0        #慢速平均权重过滤器的指数衰减率。注意：同上，必须保持0.0
     resample_interval: 1            #重采样之前所需的过滤器更新次数
     robot_model_type: "nav2_amcl::DifferentialMotionModel" #插件类的完全限定类型。
     #选项为“nav2_amcl::DifferentialMotionModel”和“nav2_amcl::OmniMotionModel”。
 
     save_pose_rate: 0.5             #将最后估计的姿势和协方差存储到参数服务器的最大速率（Hz）
-    sigma_hit: 0.2                 #模型的 z_hit 部分中使用的高斯模型的标准差
+    sigma_hit: 0.1                 #模型的 z_hit 部分中使用的高斯模型的标准差
     tf_broadcast: true              #将其设置为 false 以防止 amcl 发布全局框架和里程计框架之间的变换
     transform_tolerance: 1.0        #发布转换的容差
-    update_min_a: 0.2              #执行过滤器更新之前需要进行旋转运动。
-    update_min_d: 0.25             #执行过滤器更新之前需要进行平移运动
+    update_min_a: 0.1              #执行过滤器更新之前需要进行旋转运动。
+    update_min_d: 0.1              #执行过滤器更新之前需要进行平移运动
     z_hit: 0.5                      #模型的 z_hit 部分的混合权重，所有使用的 z 权重之和必须为 1。
     z_max: 0.05                    #模型的 z_max 部分的混合权重，所有使用的 z 权重之和必须为 1。
     z_rand: 0.5                   #模型的 z_rand 部分的混合权重，所有使用的 z 权重之和必须为 1。
@@ -232,25 +232,15 @@ local_costmap:
         z_voxels: 16                               #体素地图的Z轴体素数量
         max_obstacle_height: 2.0                   #可检测障碍物的最大高度（米）
         mark_threshold: 0                          #标记体素的阈值
-        observation_sources: scan scan2                 #观测源
+        observation_sources: scan                      #观测源（单雷达，不配置scan2）
         scan:
           topic: /scan
           max_obstacle_height: 2.0                  #可检测障碍物的最大高度（米）
           clearing: True                            #是否启用障碍物清除功能
           marking: True                             #是否启用障碍物标记功能
           data_type: "LaserScan"                    #数据类型
-          raytrace_max_range: 10.0                  #控制光线追踪从代价地图中清除障碍物的最大范围 
-          raytrace_min_range: 0.0                  #控制光线追踪从代价地图中清除障碍物的最大范围 
-          obstacle_max_range: 2.5                   #控制代价地图上标记障碍物的最大范围
-          obstacle_min_range: 0.0                   #控制代价地图上标记障碍物的最小范围
-        scan2:
-          topic: /scan2
-          max_obstacle_height: 2.0                  #可检测障碍物的最大高度（米）
-          clearing: True                            #是否启用障碍物清除功能
-          marking: True                             #是否启用障碍物标记功能
-          data_type: "LaserScan"                    #数据类型
-          raytrace_max_range: 10.0                  #控制光线追踪从代价地图中清除障碍物的最大范围 
-          raytrace_min_range: 0.0                  #控制光线追踪从代价地图中清除障碍物的最大范围 
+          raytrace_max_range: 10.0                  #控制光线追踪从代价地图中清除障碍物的最大范围
+          raytrace_min_range: 0.0                  #控制光线追踪从代价地图中清除障碍物的最大范围
           obstacle_max_range: 2.5                   #控制代价地图上标记障碍物的最大范围
           obstacle_min_range: 0.0                   #控制代价地图上标记障碍物的最小范围
 
@@ -278,25 +268,15 @@ global_costmap:
       obstacle_layer:  #障碍层参数
         plugin: "nav2_costmap_2d::ObstacleLayer" #障碍层插件
         enabled: True
-        observation_sources: scan scan2                 #观测源
+        observation_sources: scan                      #观测源（单雷达，不配置scan2）
         scan:
           topic: /scan
           max_obstacle_height: 2.0                 #可检测障碍物的最大高度（米）
           clearing: True                           #是否启用障碍物清除功能
           marking: True                            #是否启用障碍物标记功能
           data_type: "LaserScan"                   #数据类型
-          raytrace_max_range: 10.0                 #控制光线追踪从代价地图中清除障碍物的最大范围 
-          raytrace_min_range: 0.0                  #控制光线追踪从代价地图中清除障碍物的最大范围 
-          obstacle_max_range: 2.5                  #控制代价地图上标记障碍物的最大范围
-          obstacle_min_range: 0.0                  #控制代价地图上标记障碍物的最小范围
-        scan2:
-          topic: /scan2
-          max_obstacle_height: 2.0                 #可检测障碍物的最大高度（米）
-          clearing: True                           #是否启用障碍物清除功能
-          marking: True                            #是否启用障碍物标记功能
-          data_type: "LaserScan"                   #数据类型
-          raytrace_max_range: 10.0                 #控制光线追踪从代价地图中清除障碍物的最大范围 
-          raytrace_min_range: 0.0                  #控制光线追踪从代价地图中清除障碍物的最大范围 
+          raytrace_max_range: 10.0                 #控制光线追踪从代价地图中清除障碍物的最大范围
+          raytrace_min_range: 0.0                  #控制光线追踪从代价地图中清除障碍物的最大范围
           obstacle_max_range: 2.5                  #控制代价地图上标记障碍物的最大范围
           obstacle_min_range: 0.0                  #控制代价地图上标记障碍物的最小范围
       static_layer: #静态层参数
@@ -374,30 +354,51 @@ smoother_server:
       max_its: 1000
       do_refinement: True
 
-# behavior_server:
-#   ros__parameters:
-#     local_costmap_topic: local_costmap/costmap_raw
-#     local_footprint_topic: local_costmap/published_footprint
-#     global_costmap_topic: global_costmap/costmap_raw
-#     global_footprint_topic: global_costmap/published_footprint
-#     cycle_frequency: 10.0 #运行行为插件的频率。
-#     behavior_plugins: ["spin", "backup", "drive_on_heading", "wait"] #插件包括：{“旋转”、“后退”、“前进”、“等待”}
-#     spin:
-#       plugin: "nav2_behaviors/Spin"
-#     backup:
-#       plugin: "nav2_behaviors/BackUp"
-#     drive_on_heading:
-#       plugin: "nav2_behaviors/DriveOnHeading"
-#     wait:
-#       plugin: "nav2_behaviors/Wait"
-#     global_frame: map
-#     robot_base_frame: base_footprint
-#     transform_tolerance: 0.1 #TF 变换容差
-#     use_sim_time: False
-#     simulate_ahead_time: 2.0 #提前模拟
-#     max_rotational_vel: 0.3  #最大旋转速度（弧度/秒）
-#     min_rotational_vel: 0.05 #最小旋转速度（弧度/秒）
-#     rotational_acc_lim: 0.3  #最大旋转加速度（rad/s^2）
+# 整体工作流程
+# 导航失败时，行为树会依次调用这些恢复动作：清除代价地图 → 重新规划 → backup后退 → spin旋转 → wait等待 → 再重试，直到成功或达到最大重试次数。
+# 当前用的是 Nav2 默认行为树 navigate_to_pose_w_replanning_and_recovery.xml，它的恢复逻辑大致是：
+#     RecoveryNode (重试 N 次)
+#     ├── PipelineSequence
+#     │   ├── ComputePathToPose (规划)
+#     │   └── FollowPath (执行)
+#     └── ReactiveFallback (恢复序列)
+#         ├── ClearEntireCostmap (清除全局代价地图)
+#         ├── ClearEntireCostmap (清除局部代价地图)
+#         ├── Spin
+#         ├── Wait
+#         └── BackUp
+#     执行逻辑是 Fallback 节点：从上到下依次尝试，某个成功就回去重新规划。如果该恢复动作失败（比如之前 spin 因为找不到 odom frame 失败），就继续尝试下一个。
+#     所以顺序是行为树 XML 里写的节点顺序，不是 behavior_plugins 参数里的注册顺序。behavior_plugins 只是告诉 behavior_server "加载哪些插件"，具体什么时候调用哪个、按什么顺序，完全由行为树控制。
+behavior_server:
+  ros__parameters:
+    local_costmap_topic: local_costmap/costmap_raw # 订阅局部/全局代价地图的原始数据
+    local_footprint_topic: local_costmap/published_footprint # 订阅机器人足迹轮廓
+    global_costmap_topic: global_costmap/costmap_raw
+    global_footprint_topic: global_costmap/published_footprint
+    # 以上这些让 behavior_server 知道哪里有障碍物，避免恢复动作时撞到东西
+    cycle_frequency: 10.0 #运行行为插件的频率。
+    # 注册了 4 种恢复动作：
+    # - spin — 原地旋转，尝试甩开障碍物
+    # - backup — 后退
+    # - drive_on_heading — 沿当前朝向直行
+    # - wait — 原地等待（等障碍物自己移开）
+    behavior_plugins: ["spin", "backup", "drive_on_heading", "wait"] #插件包括：{"旋转"、"后退"、"前进"、"等待"}
+    spin:
+      plugin: "nav2_behaviors/Spin"
+    backup:
+      plugin: "nav2_behaviors/BackUp"
+    drive_on_heading:
+      plugin: "nav2_behaviors/DriveOnHeading"
+    wait:
+      plugin: "nav2_behaviors/Wait"
+    global_frame: map # 在 map 坐标系下工作。这是这次修复的关键——之前被注释掉后默认用 odom，但你的 TF 树里只有 odom_combined，所以 spin/backup 全部失败
+    robot_base_frame: base_footprint # 机器人本体坐标系
+    transform_tolerance: 0.1 #TF 变换容差，TF 变换允许 0.1 秒的时间延迟
+    use_sim_time: False
+    simulate_ahead_time: 2.0 #提前模拟，执行恢复动作前，先模拟未来 2 秒的轨迹，确认不会撞到东西
+    max_rotational_vel: 0.3  #最大旋转速度（弧度/秒） 最大旋转速度 0.3 rad/s（约 17°/s）
+    min_rotational_vel: 0.05 #最小旋转速度（弧度/秒） 
+    rotational_acc_lim: 0.3  #最大旋转加速度（rad/s^2）
 
 robot_state_publisher:
   ros__parameters:

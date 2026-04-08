@@ -37,3 +37,8 @@ Thumbs.db
 *.so
 
 *.pgm
+
+old_nav2_map
+old_turn_on_wheeltec_robot
+yesense_ros2.zip
+debug/
