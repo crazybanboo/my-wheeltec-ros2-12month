@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Custom behavior tree for senior_diff (rectangular differential robot).
+  Recovery order optimized: BackUp first (escape tight spaces), then Spin.
+  Default BT spins first which wastes a retry for rectangular robots in narrow areas.
+-->
+<root main_tree_to_execute="MainTree">
+  <BehaviorTree ID="MainTree">
+    <RecoveryNode number_of_retries="6" name="NavigateRecovery">
+      <PipelineSequence name="NavigateWithReplanning">
+        <RateController hz="1.0">
+          <RecoveryNode number_of_retries="1" name="ComputePathToPose">
+            <ComputePathToPose goal="{goal}" path="{path}" planner_id="GridBased"/>
+            <ClearEntireCostmap name="ClearGlobalCostmap-Context" service_name="global_costmap/clear_entirely_global_costmap"/>
+          </RecoveryNode>
+        </RateController>
+        <RecoveryNode number_of_retries="1" name="FollowPath">
+          <FollowPath path="{path}" controller_id="FollowPath"/>
+          <ClearEntireCostmap name="ClearLocalCostmap-Context" service_name="local_costmap/clear_entirely_local_costmap"/>
+        </RecoveryNode>
+      </PipelineSequence>
+
+      <ReactiveFallback name="RecoveryFallback">
+        <GoalUpdated/>
+        <RoundRobin name="RecoveryActions">
+          <!-- 1. Clear costmaps to remove stale obstacle data -->
+          <Sequence name="ClearingActions">
+            <ClearEntireCostmap name="ClearLocalCostmap-Subtree" service_name="local_costmap/clear_entirely_local_costmap"/>
+            <ClearEntireCostmap name="ClearGlobalCostmap-Subtree" service_name="global_costmap/clear_entirely_global_costmap"/>
+          </Sequence>
+
+          <!-- 2. BackUp first: rectangular robot should escape tight space before attempting spin -->
+          <Sequence name="AttemptBackUp">
+            <ClearEntireCostmap name="ClearLocal-BeforeBackUp" service_name="local_costmap/clear_entirely_local_costmap"/>
+            <BackUp backup_dist="0.30" backup_speed="0.05"/>
+          </Sequence>
+
+          <!-- 3. Spin: now that we have more room, try rotating -->
+          <Sequence name="AttemptSpin">
+            <ClearEntireCostmap name="ClearLocal-BeforeSpin" service_name="local_costmap/clear_entirely_local_costmap"/>
+            <Spin spin_dist="1.57"/>
+          </Sequence>
+
+          <!-- 4. Wait: give dynamic obstacles time to move -->
+          <Wait wait_duration="5"/>
+        </RoundRobin>
+      </ReactiveFallback>
+    </RecoveryNode>
+  </BehaviorTree>
+</root>

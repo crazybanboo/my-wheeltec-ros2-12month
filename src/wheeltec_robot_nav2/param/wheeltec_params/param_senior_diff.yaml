@@ -69,10 +69,9 @@ bt_navigator:
     odom_topic: /odom_combined
     bt_loop_duration: 10        #BT 执行每次迭代的持续时间（以毫秒为单位
     default_server_timeout: 20  #BT 操作节点等待操作服务器确认时的默认超时值（以毫秒为单位）
-    # 'default_nav_through_poses_bt_xml' and 'default_nav_to_pose_bt_xml' are use defaults:
-    # nav2_bt_navigator/navigate_to_pose_w_replanning_and_recovery.xml
+    # default_nav_through_poses_bt_xml uses Nav2 default:
     # nav2_bt_navigator/navigate_through_poses_w_replanning_and_recovery.xml
-    # They can be set here or via a RewrittenYaml remap from a parent launch file to Nav2.
+    default_nav_to_pose_bt_xml: /home/wheeltec/wheeltec_ros2/src/wheeltec_robot_nav2/config/senior_diff_nav_bt.xml
     #plugin_lib_names: #行为树节点共享库列表，Humble后的版本默认包含所有NAV2 BT库，这里可以加入自定义BT节点
     error_code_names:
     - compute_path_error_code 
@@ -96,8 +95,8 @@ controller_server:
 
     progress_checker:
       plugin: "nav2_controller::SimpleProgressChecker"
-      required_movement_radius: 0.5
-      movement_time_allowance: 10.0
+      required_movement_radius: 0.5 # 必须移动0.5m
+      movement_time_allowance: 10.0 # 在10秒内
 
     goal_checker:
       plugin: "nav2_controller::SimpleGoalChecker"
@@ -150,20 +149,20 @@ controller_server:
       GoalCritic: #当距离目标较近时，GoalCritic会激励机器人在空间上向目标导航
         enabled: true
         cost_power: 1
-        cost_weight: 15.0 #权重参数
+        cost_weight: 5.0 #权重参数（降低，减少直奔目标的倾向，防止切弯）
         threshold_to_consider: 1.4  #机器人与目标之间的最小距离（米），超过此距离则要考虑目标距离成本。
 
       ObstaclesCritic:
         enabled: true
         cost_power: 1
-        repulsion_weight: 1.5 #权重参数，通常优先选择成本较低的空间中的路线。
+        repulsion_weight: 5.0 #权重参数，通常优先选择成本较低的空间中的路线。
         critical_weight: 30.0 #应用于临界碰撞的权重，用于collision_margin_distance防止近距离碰撞
         consider_footprint: false #是否使用点成本（如果机器人是圆形的或者计算能力低）或计算 SE2 足迹成本
         collision_cost: 10000.0 #应用于轨迹中真实碰撞的成本。
-        collision_margin_distance: 0.1 #碰撞边缘距离，应该设置在0.05-0.2之间，请确保将此参数设置为预计机器人需要穿越的最窄空间
+        collision_margin_distance: 0.20 #碰撞边缘距离，应该设置在0.05-0.2之间，请确保将此参数设置为预计机器人需要穿越的最窄空间
         near_goal_distance: 0.4 #靠近目标的距离（米）停止应用优先障碍物项，以允许机器人平稳地收敛到靠近障碍物的目标姿势，0.5 --> 0.6 -->0.3(Tues) 
         cost_scaling_factor: 5.0
-        inflation_radius: 0.2  #膨胀半径，仅限Humble
+        inflation_radius: 0.3  #膨胀半径，仅限Humble
 
       PreferForwardCritic: #激励机器人前进，而不是后退
         enabled: true
@@ -175,11 +174,11 @@ controller_server:
       PathAlignCritic:  #PathAlignCritic会激励机器人与全局路径保持一致。它不实现路径跟随行为。
         enabled: true
         cost_power: 1
-        cost_weight: 25.0 #权重参数
+        cost_weight: 45.0 #权重参数（提高，强制贴合路径，防止切弯）
         max_path_occupancy_ratio: 0.07 #最大路径占用率
         trajectory_point_step: 4
         threshold_to_consider: 0.5 #机器人与目标之间的距离阈值，阈值符合则停止考虑路径对齐并允许目标批评家接管。
-        offset_from_furthest: 20 #最远偏移量
+        offset_from_furthest: 6 #最远偏移量（降低，不让控制器看太远而抄近路）
         use_path_orientations: false #是否在路径对齐中考虑路径的方向
 
       PathAngleCritic: #路径角度评论，机器人在因累积角度误差较大而需要时进行急转弯。
@@ -194,7 +193,7 @@ controller_server:
       PathFollowCritic: #路径跟随评论家激励机器人沿着路径前进。
         enabled: true
         cost_power: 1
-        cost_weight: 25.0 #权重参数
+        cost_weight: 35.0 #权重参数（提高，加强路径跟随）
         offset_from_furthest: 5
         threshold_to_consider: 1.4 #机器人与目标之间的距离阈值，停止考虑路径跟随，并允许目标评论家接管。
 #参数参考：https://docs.nav2.org/configuration/packages/configuring-mppic.html
@@ -217,12 +216,12 @@ local_costmap:
       height: 3            #代价地图的高度（m）
       resolution: 0.05     #代价地图1像素的分辨率，以米为单位
       #robot_radius: 0.20   #机器人半径，如果未提供足迹坐标，则使用机器人半径。
-      footprint: "[ [-0.07, -0.19], [-0.07, 0.19],[0.35,0.19],[0.35, -0.19] ]"
+      footprint: "[ [-0.07, -0.20], [-0.07, 0.20],[0.35,0.20],[0.35, -0.20] ]"
       plugins: ["voxel_layer","inflation_layer"] #插件包括:{“体素层”，“膨胀层”}
       inflation_layer:                             #膨胀层参数
         plugin: "nav2_costmap_2d::InflationLayer"  #膨胀层插件。
-        cost_scaling_factor: 3.0                   #成本缩放因子，决定障碍物成本随距离的递减速度。
-        inflation_radius: 0.2                     #膨胀半径
+        cost_scaling_factor: 5.0                   #成本缩放因子，决定障碍物成本随距离的递减速度。
+        inflation_radius: 0.3                    #膨胀半径
       voxel_layer:
         plugin: "nav2_costmap_2d::VoxelLayer"      #体素层插件。
         enabled: True
@@ -261,7 +260,7 @@ global_costmap:
       robot_base_frame: base_footprint  #机器人底座框架
       use_sim_time: False               #仿真时间 
       #robot_radius: 0.20                #机器人半径
-      footprint: "[ [-0.07, -0.19], [-0.07, 0.19],[0.35,0.19],[0.35, -0.19] ]"
+      footprint: "[ [-0.07, -0.20], [-0.07, 0.20],[0.35,0.20],[0.35, -0.20] ]"
       resolution: 0.05                  #全局地图1像素的分辨率，以米为单位
       track_unknown_space: true
       plugins: ["static_layer", "obstacle_layer", "inflation_layer"] #插件包括：{“静态层”，“障碍层”，“膨胀层”}
@@ -284,8 +283,8 @@ global_costmap:
         map_subscribe_transient_local: True
       inflation_layer: #膨胀层参数
         plugin: "nav2_costmap_2d::InflationLayer"  #膨胀层插件
-        cost_scaling_factor: 3.0                   #成本缩放因子，决定障碍物成本随距离的递减速度。
-        inflation_radius: 0.2                     #膨胀半径
+        cost_scaling_factor: 1.0                   #成本缩放因子，决定障碍物成本随距离的递减速度。
+        inflation_radius: 0.3                    #膨胀半径
       always_send_full_costmap: True               #是否每次更新时都发送完整的成本图，而不是更新
   global_costmap_client:
     ros__parameters:
@@ -308,6 +307,24 @@ map_saver:
     map_subscribe_transient_local: True  #地图话题的 QoS 设置
 
 planner_server: #规划器服务器参数
+# SmacPlanner2D 是一个 2D 的 A* 搜索规划器，和你当前用的 SmacPlannerHybrid 的区别：
+
+#     ┌──────────────────┬────────────────────────┬────────────────────────────────┐
+#     │                  │     SmacPlanner2D      │ SmacPlannerHybrid (你当前用的) │
+#     ├──────────────────┼────────────────────────┼────────────────────────────────┤
+#     │ 搜索方式         │ 2D 网格搜索            │ 混合 A*，考虑车辆运动学        │
+#     ├──────────────────┼────────────────────────┼────────────────────────────────┤
+#     │ 是否考虑转弯半径 │ 不考虑，任意方向都能走 │ 考虑，Dubin 模型有最小转弯半径 │
+#     ├──────────────────┼────────────────────────┼────────────────────────────────┤
+#     │ 规划结果         │ 路径可能包含尖角       │ 路径是平滑的曲线               │
+#     ├──────────────────┼────────────────────────┼────────────────────────────────┤
+#     │ 计算量           │ 更轻                   │ 更重                           │
+#     └──────────────────┴────────────────────────┴────────────────────────────────┘
+
+#     MOORE 是网格搜索的邻域模型，指 Moore 邻域（8方向），即上下左右 + 四个对角线，共 8 个方向可以扩展。另一个选项是 Von Neumann 邻域（4方向，只有上下左右）。
+
+#     全向轮（top_omni）用 SmacPlanner2D + MOORE 是合理的，因为全向轮可以任意方向移动，不需要考虑转弯半径。而你的 senior_diff 差速车有运动学约束（不能横移），所以用 SmacPlannerHybrid + DUBIN 更合适——DUBIN
+#     模型只允许前进 + 转弯，符合差速车的实际运动能力。
   ros__parameters:
     expected_planner_frequency: 1.0     #预期的规划器频率。如果当前频率小于预期频率，则显示警告消息。
     use_sim_time: False
@@ -326,11 +343,11 @@ planner_server: #规划器服务器参数
       angle_quantization_bins: 72         # For Hybrid/Lattice nodes: Number of angle bins for search, must be 1 for 2D node (no angle search)
       analytic_expansion_ratio: 3.5       # For Hybrid/Lattice nodes: The ratio to attempt analytic expansions during search for final approach.
       analytic_expansion_max_cost: 200.0
-      minimum_turning_radius: 0.20        # For Hybrid/Lattice nodes: minimum turning radius in m of path / vehicle
+      minimum_turning_radius: 0.15        # For Hybrid/Lattice nodes: minimum turning radius in m of path / vehicle
       reverse_penalty: 1.2                # For Reeds-Shepp model: penalty to apply if motion is reversing, must be => 1
       change_penalty: 0.2                 # For Hybrid nodes: penalty to apply if motion is changing directions, must be >= 0
       non_straight_penalty: 1.5          # For Hybrid nodes: penalty to apply if motion is non-straight, must be => 1
-      cost_penalty: 2.5                   # For Hybrid nodes: penalty to apply to higher cost areas when adding into the obstacle map dynamic programming distance expansion heuristic. This drives the robot more towards the center of passages. A value between 1.3 - 3.5 is reasonable.
+      cost_penalty: 1.5                   # For Hybrid nodes: penalty to apply to higher cost areas when adding into the obstacle map dynamic programming distance expansion heuristic. This drives the robot more towards the center of passages. A value between 1.3 - 3.5 is reasonable. (降低以允许穿过高代价但非lethal的窄通道)
       lookup_table_size: 20.0             # For Hybrid nodes: Size of the dubin/reeds-sheep distance window to cache, in meters.
       cache_obstacle_heuristic: True      # For Hybrid nodes: Cache the obstacle map dynamic programming distance expansion heuristic between subsiquent replannings of the same goal location. Dramatically speeds up replanning performance (40x) if costmap is largely static.     
       smooth_path: true

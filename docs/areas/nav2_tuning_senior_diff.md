@@ -20,7 +20,40 @@
 ## 行为恢复
 
 - **global_frame 必须设为 map** — 之前注释掉后默认用 odom，但 TF 树里只有 odom_combined，导致 spin/backup 全部失败
-- senior_diff 用 Nav2 默认行为树，不用自定义 `omni_nav_bt.xml`
+- senior_diff 使用自定义行为树 `src/wheeltec_robot_nav2/config/senior_diff_nav_bt.xml`，已在 `param_senior_diff.yaml` 中通过 `default_nav_to_pose_bt_xml` 指定
+- **恢复顺序：清costmap → 后退 → 旋转 → 等待**（默认行为树是旋转在前，后退在后）
+  - 长方形差速小车在狭窄空间先旋转容易碰撞失败浪费重试次数，先后退脱困再旋转更合理
+  - Spin 本身有碰撞检测（基于 costmap + 机器人 footprint 逐帧检测），不会硬转撞墙，但失败了等于浪费一次恢复机会
+- 每个恢复动作前先清局部 costmap，避免残留障碍数据导致恢复动作被误判碰撞（参考 omni_nav_bt.xml 的做法）
+- **核心矛盾（未解决）**：机器人进入 lethal 区域后，所有恢复动作（BackUp/Spin/DriveOnHeading）都会做碰撞预检测，发现当前位置在碰撞中直接返回失败。ClearCostmap 清了也没用，雷达数据立刻重新填充。这是一个需要继续研究的问题。
+
+## MPPI 控制器避障与路径跟随（2026-04-10 调参，仍在优化中）
+
+核心矛盾：膨胀半径大 → 不撞墙但容易进入 lethal 区 + 窄通道过不去；膨胀半径小 → 能过窄道但转弯切弯撞墙。
+
+### 当前参数快照（2026-04-10）
+
+- `footprint: [-0.07,-0.20] to [0.35,0.20]`（实测宽 40cm，已修正）
+- `ObstaclesCritic`: repulsion_weight=5.0, collision_margin_distance=0.35, consider_footprint=false, inflation_radius=0.3
+- `local_costmap inflation`: radius=0.3, cost_scaling_factor=5.0
+- `global_costmap inflation`: radius=0.3, cost_scaling_factor=1.0
+- `PathAlignCritic`: cost_weight=45.0, offset_from_furthest=6
+- `PathFollowCritic`: cost_weight=35.0
+- `GoalCritic`: cost_weight=5.0（降低防切弯）
+- `cost_penalty`（SmacPlannerHybrid）: 1.5（降低让规划器愿意穿过高代价窄通道）
+
+### 已验证的结论
+
+- **consider_footprint: true + 高排斥力组合会导致 MPPI 崩溃**（Optimizer fail to compute path，机器人天旋地转）。2000 条候选轨迹用矩形 footprint + 0.35m 碰撞边距检测，几乎所有轨迹都被判危险。**必须保持 consider_footprint: false**
+- **repulsion_weight 和 collision_margin_distance 提高有效果**（从 1.5/0.1 → 5.0/0.35），撞墙频率降低
+- **PathAlignCritic 权重提高 + offset_from_furthest 降低可减少切弯**（GoalCritic 拉力太强是切弯主因）
+- **global costmap cost_scaling_factor 太低（如1.0）+ inflation_radius 较大 → 规划器找不到路径**，窄通道全被高代价覆盖
+
+### 待继续优化的问题
+
+- 转弯时仍偶尔贴墙（consider_footprint 不能用，只能靠排斥力）
+- 膨胀参数在"不撞墙"和"能过窄道"之间的平衡点还需要实车微调
+- 偶发 costmap 与地图旋转 90°，疑似 IMU 启动 yaw 偏移（已创建 `debug/check_yaw.py` 诊断脚本）
 
 ## 雷达
 
@@ -29,6 +62,8 @@
 ## 绝对不能动的参数
 
 - **EKF `transform_time_offset` 必须保持 0.0** — 改为 0.01 会导致 nav2_container SIGSEGV 崩溃（2026-04-08 确认）
+- **SmacPlannerHybrid `minimum_turning_radius` 不能设为 0.0** — Dubin 运动模型在数学上要求 > 0，设为 0 会导致规划器完全无法工作（所有目标都报 no valid path）。保持 0.20（2026-04-11 确认）
+- **MPPI ObstaclesCritic `consider_footprint` 不能与高排斥力同时开启** — consider_footprint=true + repulsion_weight≥5.0 + collision_margin_distance≥0.35 会导致 MPPI 所有候选轨迹被判危险，Optimizer fail to compute path，机器人失控天旋地转（2026-04-10 确认）
 
 ## 已知坑
 
