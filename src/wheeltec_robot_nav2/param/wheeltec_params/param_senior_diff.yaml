@@ -86,7 +86,7 @@ bt_navigator_rclcpp_node:
 controller_server:
   ros__parameters:
     use_sim_time: False                             
-    controller_frequency: 5.0                      #运行控制器的频率 (hz)
+    controller_frequency: 10.0                      #运行控制器的频率 (hz)
     controller_plugins: ["FollowPath"]              # 用于处理请求和参数的控制器插件的映射名称列表
     odom_topic: /odom_combined                      #里程计话题名称
 
@@ -107,23 +107,27 @@ controller_server:
     FollowPath:
       plugin: "nav2_rotation_shim_controller::RotationShimController" #旋转控制器
       primary_controller: "nav2_mppi_controller::MPPIController" #MPPI控制器
-      time_steps: 56    #候选轨迹中的时间步长（点）数
+      forward_sampling_distance: 0.8  #沿路径向前采样的距离，用于确定目标朝向（默认0.5）
+      angular_dist_threshold: 0.785   #触发原地旋转的角度阈值（弧度），约45度
+      rotate_to_heading_angular_vel: 0.5  #原地旋转角速度（rad/s）
+      max_angular_accel: 1.0          #原地旋转最大角加速度（rad/s²）
+      time_steps: 36    #候选轨迹中的时间步长（点）数
       model_dt: 0.2    #每个时间步长的时间步长的长度dt（以秒为单位）是预测范围
-      batch_size: 2000  #在给定迭代中从当前最佳控制序列中随机采样的候选轨迹的数量
+      batch_size: 1000  #在给定迭代中从当前最佳控制序列中随机采样的候选轨迹的数量
       vx_std: 0.2       #Vx 的抽样标准差
       vy_std: 0.2       #Vy 的抽样标准差
       wz_std: 0.4       #Wz（角速度）的抽样标准差
-      vx_max: 0.5       #目标最大前进速度（米/秒）
-      vx_min: -0.5      #目标最大反向速度（米/秒）
+      vx_max: 0.25       #目标最大前进速度（米/秒）
+      vx_min: -0.25      #目标最大反向速度（米/秒）
       vy_max: 0.5       #如果使用Omni运动模型，目标最大横向速度（m/s）
-      wz_max: 2.0       #最大旋转速度（弧度/秒）
+      wz_max: 1.0       #最大旋转速度（弧度/秒）
       ax_max: 1.5
       ax_min: -1.5
       ay_max: 0.0
       az_max: 1.5
       iteration_count: 1 #迭代次数
       prune_distance: 1.5 #路径上距离机器人最近点的距离（米）
-      enforce_path_inversion: false
+      enforce_path_inversion: true
       transform_tolerance: 0.1 #使用 TF（s）进行数据转换的时间容差
       temperature: 0.3 #根据成本选择轨迹，0表示使用成本最佳的控制，巨大的值将导致仅取所有轨迹的平均值而不考虑成本。
       gamma: 0.015 #平滑度（高）和低能耗（低）之间的权衡,保持默认值
@@ -156,10 +160,10 @@ controller_server:
         enabled: true
         cost_power: 1
         repulsion_weight: 5.0 #权重参数，通常优先选择成本较低的空间中的路线。
-        critical_weight: 30.0 #应用于临界碰撞的权重，用于collision_margin_distance防止近距离碰撞
-        consider_footprint: false #是否使用点成本（如果机器人是圆形的或者计算能力低）或计算 SE2 足迹成本
+        critical_weight: 25.0 #应用于临界碰撞的权重，用于collision_margin_distance防止近距离碰撞
+        consider_footprint: true #是否使用点成本（如果机器人是圆形的或者计算能力低）或计算 SE2 足迹成本
         collision_cost: 10000.0 #应用于轨迹中真实碰撞的成本。
-        collision_margin_distance: 0.20 #碰撞边缘距离，应该设置在0.05-0.2之间，请确保将此参数设置为预计机器人需要穿越的最窄空间
+        collision_margin_distance: 0.15 #碰撞边缘距离，应该设置在0.05-0.2之间，请确保将此参数设置为预计机器人需要穿越的最窄空间
         near_goal_distance: 0.4 #靠近目标的距离（米）停止应用优先障碍物项，以允许机器人平稳地收敛到靠近障碍物的目标姿势，0.5 --> 0.6 -->0.3(Tues) 
         cost_scaling_factor: 5.0
         inflation_radius: 0.3  #膨胀半径，仅限Humble
@@ -174,7 +178,7 @@ controller_server:
       PathAlignCritic:  #PathAlignCritic会激励机器人与全局路径保持一致。它不实现路径跟随行为。
         enabled: true
         cost_power: 1
-        cost_weight: 45.0 #权重参数（提高，强制贴合路径，防止切弯）
+        cost_weight: 30.0 #权重参数（提高，强制贴合路径，防止切弯）
         max_path_occupancy_ratio: 0.07 #最大路径占用率
         trajectory_point_step: 4
         threshold_to_consider: 0.5 #机器人与目标之间的距离阈值，阈值符合则停止考虑路径对齐并允许目标批评家接管。
@@ -193,7 +197,7 @@ controller_server:
       PathFollowCritic: #路径跟随评论家激励机器人沿着路径前进。
         enabled: true
         cost_power: 1
-        cost_weight: 35.0 #权重参数（提高，加强路径跟随）
+        cost_weight: 25.0 #权重参数（提高，加强路径跟随）
         offset_from_furthest: 5
         threshold_to_consider: 1.4 #机器人与目标之间的距离阈值，停止考虑路径跟随，并允许目标评论家接管。
 #参数参考：https://docs.nav2.org/configuration/packages/configuring-mppic.html
@@ -216,12 +220,12 @@ local_costmap:
       height: 3            #代价地图的高度（m）
       resolution: 0.05     #代价地图1像素的分辨率，以米为单位
       #robot_radius: 0.20   #机器人半径，如果未提供足迹坐标，则使用机器人半径。
-      footprint: "[ [-0.07, -0.20], [-0.07, 0.20],[0.35,0.20],[0.35, -0.20] ]"
+      footprint: "[ [-0.11, -0.20], [-0.11, 0.20],[0.32,0.20],[0.32, -0.20] ]"
       plugins: ["voxel_layer","inflation_layer"] #插件包括:{“体素层”，“膨胀层”}
       inflation_layer:                             #膨胀层参数
         plugin: "nav2_costmap_2d::InflationLayer"  #膨胀层插件。
         cost_scaling_factor: 5.0                   #成本缩放因子，决定障碍物成本随距离的递减速度。
-        inflation_radius: 0.3                    #膨胀半径
+        inflation_radius: 0.25                    #膨胀半径
       voxel_layer:
         plugin: "nav2_costmap_2d::VoxelLayer"      #体素层插件。
         enabled: True
@@ -260,7 +264,7 @@ global_costmap:
       robot_base_frame: base_footprint  #机器人底座框架
       use_sim_time: False               #仿真时间 
       #robot_radius: 0.20                #机器人半径
-      footprint: "[ [-0.07, -0.20], [-0.07, 0.20],[0.35,0.20],[0.35, -0.20] ]"
+      footprint: "[ [-0.11, -0.20], [-0.11, 0.20],[0.32,0.20],[0.32, -0.20] ]"
       resolution: 0.05                  #全局地图1像素的分辨率，以米为单位
       track_unknown_space: true
       plugins: ["static_layer", "obstacle_layer", "inflation_layer"] #插件包括：{“静态层”，“障碍层”，“膨胀层”}
@@ -283,8 +287,8 @@ global_costmap:
         map_subscribe_transient_local: True
       inflation_layer: #膨胀层参数
         plugin: "nav2_costmap_2d::InflationLayer"  #膨胀层插件
-        cost_scaling_factor: 1.0                   #成本缩放因子，决定障碍物成本随距离的递减速度。
-        inflation_radius: 0.3                    #膨胀半径
+        cost_scaling_factor: 5.0                   #成本缩放因子，决定障碍物成本随距离的递减速度。
+        inflation_radius: 0.35                    #膨胀半径
       always_send_full_costmap: True               #是否每次更新时都发送完整的成本图，而不是更新
   global_costmap_client:
     ros__parameters:
@@ -338,16 +342,16 @@ planner_server: #规划器服务器参数
       max_iterations: 1000000             # maximum total iterations to search for before failing (in case unreachable), set to -1 to disable
       max_on_approach_iterations: 1000    # maximum number of iterations to attempt to reach goal once in tolerance, 2D only
       max_planning_time: 5.0              # max time in s for planner to plan, smooth, and upsample. Will scale maximum smoothing and upsampling times based on remaining time after planning.
-      motion_model_for_search: "DUBIN"   # 2D Moore, Von Neumann; Hybrid Dubin, Redds-Shepp; State Lattice set internally
+      motion_model_for_search: "REEDS_SHEPP"   # 2D Moore, Von Neumann; Hybrid Dubin, Redds-Shepp; State Lattice set internally
       cost_travel_multiplier: 2.0         # For 2D: Cost multiplier to apply to search to steer away from high cost areas. Larger values will place in the center of aisles more exactly (if non-`FREE` cost potential field exists) but take slightly longer to compute. To optimize for speed, a value of 1.0 is reasonable. A reasonable tradeoff value is 2.0. A value of 0.0 effective disables steering away from obstacles and acts like a naive binary search A*.
       angle_quantization_bins: 72         # For Hybrid/Lattice nodes: Number of angle bins for search, must be 1 for 2D node (no angle search)
       analytic_expansion_ratio: 3.5       # For Hybrid/Lattice nodes: The ratio to attempt analytic expansions during search for final approach.
       analytic_expansion_max_cost: 200.0
-      minimum_turning_radius: 0.15        # For Hybrid/Lattice nodes: minimum turning radius in m of path / vehicle
+      minimum_turning_radius: 0.25        # For Hybrid/Lattice nodes: minimum turning radius in m of path / vehicle
       reverse_penalty: 1.2                # For Reeds-Shepp model: penalty to apply if motion is reversing, must be => 1
       change_penalty: 0.2                 # For Hybrid nodes: penalty to apply if motion is changing directions, must be >= 0
       non_straight_penalty: 1.5          # For Hybrid nodes: penalty to apply if motion is non-straight, must be => 1
-      cost_penalty: 1.5                   # For Hybrid nodes: penalty to apply to higher cost areas when adding into the obstacle map dynamic programming distance expansion heuristic. This drives the robot more towards the center of passages. A value between 1.3 - 3.5 is reasonable. (降低以允许穿过高代价但非lethal的窄通道)
+      cost_penalty: 1.3                   # For Hybrid nodes: penalty to apply to higher cost areas when adding into the obstacle map dynamic programming distance expansion heuristic. This drives the robot more towards the center of passages. A value between 1.3 - 3.5 is reasonable. (降低以允许穿过高代价但非lethal的窄通道)
       lookup_table_size: 20.0             # For Hybrid nodes: Size of the dubin/reeds-sheep distance window to cache, in meters.
       cache_obstacle_heuristic: True      # For Hybrid nodes: Cache the obstacle map dynamic programming distance expansion heuristic between subsiquent replannings of the same goal location. Dramatically speeds up replanning performance (40x) if costmap is largely static.     
       smooth_path: true
